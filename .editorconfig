@@ -1,0 +1,37 @@
+root = true
+
+[*]
+charset = utf-8
+end_of_line = lf
+insert_final_newline = true
+trim_trailing_whitespace = true
+indent_style = space
+indent_size = 4
+
+# PHP (Laravel convention: 4 spaces)
+[*.php]
+indent_size = 4
+
+# JS/TS/React (convention: 2 spaces)
+[*.{js,jsx,ts,tsx}]
+indent_size = 2
+
+# JSON, YAML, config files
+[*.{json,yml,yaml}]
+indent_size = 2
+
+# Blade templates (if you use any alongside the SPA)
+[*.blade.php]
+indent_size = 4
+
+# Markdown — trailing whitespace can be meaningful (line breaks)
+[*.md]
+trim_trailing_whitespace = false
+
+# Env files — don't touch formatting
+[.env*]
+insert_final_newline = false
+
+# Makefile requires tabs, not spaces
+[Makefile]
+indent_style = tab
