@@ -7,15 +7,18 @@
     "license": "MIT",
     "require": {
         "php": "^8.3",
+        "chillerlan/php-qrcode": "^6.0",
         "inertiajs/inertia-laravel": "^2.0",
         "laravel/framework": "^13.8",
         "laravel/sanctum": "^4.0",
         "laravel/tinker": "^3.0",
+        "pragmarx/google2fa": "^9.0",
         "spatie/laravel-permission": "^8.3",
         "tightenco/ziggy": "^2.0",
         "tymon/jwt-auth": "^2.3"
     },
     "require-dev": {
+        "barryvdh/laravel-ide-helper": "^3.7",
         "fakerphp/faker": "^1.23",
         "laravel/breeze": "^2.4",
         "laravel/pail": "^1.2.5",
