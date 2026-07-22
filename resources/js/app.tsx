@@ -1,25 +1,21 @@
 import '../css/app.css';
 import './bootstrap';
-
-import { createInertiaApp } from '@inertiajs/react';
-import { resolvePageComponent } from 'laravel-vite-plugin/inertia-helpers';
 import { createRoot } from 'react-dom/client';
+import { BrowserRouter } from 'react-router-dom';
+import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
+import { ConfigProvider } from 'antd';
+import Root from './Root';
 
-const appName = import.meta.env.VITE_APP_NAME || 'Laravel';
+const queryClient = new QueryClient();
 
-createInertiaApp({
-    title: (title) => `${title} - ${appName}`,
-    resolve: (name) =>
-        resolvePageComponent(
-            `./Pages/${name}.tsx`,
-            import.meta.glob('./Pages/**/*.tsx'),
-        ),
-    setup({ el, App, props }) {
-        const root = createRoot(el);
-
-        root.render(<App {...props} />);
-    },
-    progress: {
-        color: '#4B5563',
-    },
-});
+const container = document.getElementById('app')!;
+const root = createRoot(container);
+root.render(
+    <QueryClientProvider client={queryClient}>
+        <ConfigProvider>
+            <BrowserRouter>
+                <Root />
+            </BrowserRouter>
+        </ConfigProvider>
+    </QueryClientProvider>,
+);

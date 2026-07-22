@@ -32,11 +32,13 @@ class AuthController extends Controller
             ], 401),
 
             'requires_2fa' => response()->json([
+                'status' => 'requires_2fa',
                 'requires_2fa' => true,
                 'challenge_id' => $result['challenge_id'],
             ]),
 
             'requires_2fa_setup' => response()->json([
+                'status' => 'requires_2fa_setup',
                 'requires_2fa_setup' => true,
                 'enrollment_id' => $result['enrollment_id'],
                 'secret' => $result['secret'],
@@ -85,19 +87,32 @@ class AuthController extends Controller
         return $this->respondWithSession($result);
     }
 
-    protected function respondWithSession(array $result)
-    {
-        $accessToken = JWTAuth::fromUser($result['user']);
+protected function respondWithSession(array $result)
+{
+    $accessToken = JWTAuth::fromUser($result['user']);
 
-        return response()->json([
-            'access_token' => $accessToken,
-            'user' => $result['user'],
-        ])->withCookie(Cookie::make(
-            'refresh_token', $result['refresh_token'], 60 * 24 * 14, httpOnly: true
-        ))->withCookie(Cookie::make(
-            'session_id', $result['session_id'], 60 * 24 * 14, httpOnly: true
-        ));
-    }
+    return response()->json([
+        'status' => 'success',
+        'access_token' => $accessToken,
+        'user' => $result['user'],
+    ])->withCookie(Cookie::make(
+        name: 'refresh_token',
+        value: $result['refresh_token'],
+        minutes: 60 * 24 * 14,
+        path: '/',
+        secure: ! app()->environment('local'),
+        httpOnly: true,
+        sameSite: 'lax'
+    ))->withCookie(Cookie::make(
+        name: 'session_id',
+        value: $result['session_id'],
+        minutes: 60 * 24 * 14,
+        path: '/',
+        secure: ! app()->environment('local'),
+        httpOnly: true,
+        sameSite: 'lax'
+    ));
+}
 
     public function me()
     {
@@ -135,18 +150,31 @@ class AuthController extends Controller
 
         $accessToken = JWTAuth::fromUser($user);
 
-        return response()->json([
-            'access_token' => $accessToken,
-        ])->withCookie(Cookie::make(
-            'refresh_token', $rotated['refresh_token'], 60 * 24 * 14, httpOnly: true
-        ))->withCookie(Cookie::make(
-            'session_id', $rotated['session_id'], 60 * 24 * 14, httpOnly: true
-        ));
+  return response()->json([
+    'access_token' => $accessToken,
+])->withCookie(Cookie::make(
+    name: 'refresh_token',
+    value: $rotated['refresh_token'],
+    minutes: 60 * 24 * 14,
+    path: '/',
+    secure: ! app()->environment('local'),
+    httpOnly: true,
+    sameSite: 'lax'
+))->withCookie(Cookie::make(
+    name: 'session_id',
+    value: $rotated['session_id'],
+    minutes: 60 * 24 * 14,
+    path: '/',
+    secure: ! app()->environment('local'),
+    httpOnly: true,
+    sameSite: 'lax'
+));
     }
 
     public function logout(Request $request)
     {
-        $sessionId = $request->cookie('session_id');
+
+    $sessionId = $request->cookie('session_id');
 
         if ($sessionId !== null) {
             $this->authSessionService->revoke($sessionId);
