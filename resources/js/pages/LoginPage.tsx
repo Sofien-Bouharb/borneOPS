@@ -1,12 +1,14 @@
 // resources/js/pages/LoginPage.tsx
 import { useState } from 'react';
 import { Form, Input, Button, Alert, Typography } from 'antd';
-import { useNavigate } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 import { useAuth } from '../auth/AuthContext';
 import TwoFactorSetupPage from './TwoFactorSetupPage';
 import TwoFactorChallengePage from './TwoFactorChallengePage';
+import { useLocation } from 'react-router-dom';
 
 const { Title } = Typography;
+
 
 interface LoginFormValues {
     email: string;
@@ -26,6 +28,8 @@ export default function LoginPage() {
     const [submitting, setSubmitting] = useState(false);
     const [enrollment, setEnrollment] = useState<EnrollmentData | null>(null);
     const [challengeId, setChallengeId] = useState<string | null>(null);
+    const location = useLocation();
+    const notice = (location.state as { notice?: string } | null)?.notice;
 
     async function onFinish(values: LoginFormValues) {
         setError(null);
@@ -92,7 +96,7 @@ export default function LoginPage() {
                     showIcon
                 />
             )}
-
+            {notice && <Alert type="success" message={notice} />}
             <Form layout="vertical" onFinish={onFinish} disabled={submitting}>
                 <Form.Item
                     label="Email"
@@ -118,6 +122,9 @@ export default function LoginPage() {
                         Sign in
                     </Button>
                 </Form.Item>
+                <div style={{ textAlign: 'center', marginTop: 8 }}>
+                  <Link to="/forgot-password">Forgot password?</Link>
+                </div>
             </Form>
         </div>
     );

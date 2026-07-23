@@ -2,10 +2,17 @@
 import { createContext, useContext, useEffect, useState, ReactNode } from 'react';
 import api, { setAccessToken } from '../api/client';
 
+interface Role {
+    id: number;
+    name: string;
+    guard_name: string;
+}
+
 interface User {
     id: number;
     name: string;
     email: string;
+    roles?: Role[];
 }
 
 interface LoginResult {
@@ -22,6 +29,7 @@ interface AuthContextValue {
     login: (email: string, password: string) => Promise<LoginResult>;
     completeLogin: (accessToken: string, user: User) => void;
     logout: () => Promise<void>;
+    logoutAll: () => Promise<void>;
 }
 
 const AuthContext = createContext<AuthContextValue | null>(null);
@@ -74,8 +82,19 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         setUser(null);
     }
 
+    // Revokes every session for this user (via session_version, see
+    // Section 4.4 of the Module 1 report), not just the current device.
+    // Deliberately does NOT also call /logout afterward — logout-all
+    // already invalidates the current session too, a second call would
+    // be redundant.
+    async function logoutAll() {
+        await api.post('/logout-all').catch(() => {});
+        setAccessToken(null);
+        setUser(null);
+    }
+
     return (
-        <AuthContext.Provider value={{ user, loading, login, completeLogin, logout }}>
+        <AuthContext.Provider value={{ user, loading, login, completeLogin, logout, logoutAll }}>
             {children}
         </AuthContext.Provider>
     );

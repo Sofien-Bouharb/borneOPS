@@ -18,7 +18,11 @@ return Application::configure(basePath: dirname(__DIR__))
             \Illuminate\Http\Middleware\AddLinkHeadersForPreloadedAssets::class,
         ]);
 
-        //
+        // This is a fully decoupled JSON API with no server-rendered login
+        // page. Never redirect an unauthenticated request anywhere — always
+        // let it fall through to a clean 401 JSON response instead, which
+        // shouldRenderJsonWhen() below then renders correctly.
+        $middleware->redirectGuestsTo(fn () => null);
     })
     ->withExceptions(function (Exceptions $exceptions): void {
         $exceptions->shouldRenderJsonWhen(

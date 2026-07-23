@@ -2,6 +2,9 @@
 import { Navigate, Route, Routes } from 'react-router-dom';
 import { AuthProvider, useAuth } from './auth/AuthContext';
 import LoginPage from './pages/LoginPage';
+import ForgotPasswordPage from './pages/ForgotPasswordPage';
+import ResetPasswordPage from './pages/ResetPasswordPage';
+import DashboardPage from './pages/DashboardPage';
 
 function ProtectedRoute({ children }: { children: React.ReactNode }) {
     const { user, loading } = useAuth();
@@ -17,16 +20,6 @@ function ProtectedRoute({ children }: { children: React.ReactNode }) {
     return <>{children}</>;
 }
 
-function DashboardPagePlaceholder() {
-    const { user, logout } = useAuth();
-    return (
-        <div>
-            <p>Welcome, {user?.name}</p>
-            <button onClick={() => logout()}>Log out</button>
-        </div>
-    );
-}
-
 function AppRoutes() {
     return (
         <Routes>
@@ -35,10 +28,12 @@ function AppRoutes() {
                 path="/dashboard"
                 element={
                     <ProtectedRoute>
-                        <DashboardPagePlaceholder />
+                        <DashboardPage />
                     </ProtectedRoute>
                 }
             />
+            <Route path="/forgot-password" element={<ForgotPasswordPage />} />
+            <Route path="/reset-password" element={<ResetPasswordPage />} />
             <Route path="*" element={<Navigate to="/dashboard" replace />} />
         </Routes>
     );
