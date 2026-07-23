@@ -5,12 +5,20 @@ import LoginPage from './pages/LoginPage';
 import ForgotPasswordPage from './pages/ForgotPasswordPage';
 import ResetPasswordPage from './pages/ResetPasswordPage';
 import DashboardPage from './pages/DashboardPage';
+import { LoadingOutlined } from '@ant-design/icons';
 
 function ProtectedRoute({ children }: { children: React.ReactNode }) {
     const { user, loading } = useAuth();
 
     if (loading) {
-        return <div>Loading...</div>;
+        return (
+            <div className="loading-screen" role="status" aria-live="polite">
+                <div className="loading-screen__content">
+                    <LoadingOutlined spin />
+                    <span>Restoring secure session…</span>
+                </div>
+            </div>
+        );
     }
 
     if (!user) {
@@ -42,7 +50,9 @@ function AppRoutes() {
 export default function App() {
     return (
         <AuthProvider>
-            <AppRoutes />
+            <div className="app-canvas">
+                <AppRoutes />
+            </div>
         </AuthProvider>
     );
 }

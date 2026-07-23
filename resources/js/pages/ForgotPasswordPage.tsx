@@ -1,7 +1,12 @@
 import { useState } from 'react';
 import { Link } from 'react-router-dom';
-import { Form, Input, Button, Alert, Card, Typography } from 'antd';
-import { MailOutlined } from '@ant-design/icons';
+import { Form, Input, Button, Alert, Typography } from 'antd';
+import {
+  ArrowLeftOutlined,
+  DeploymentUnitOutlined,
+  MailOutlined,
+  SafetyCertificateOutlined,
+} from '@ant-design/icons';
 import apiClient from '../api/client';
 
 const { Title, Text } = Typography;
@@ -53,65 +58,108 @@ export default function ForgotPasswordPage() {
   };
 
   return (
-    <div style={{ display: 'flex', justifyContent: 'center', paddingTop: 96 }}>
-      <Card style={{ width: 400 }}>
-        <Title level={3} style={{ marginBottom: 4 }}>
-          Reset your password
-        </Title>
-        <Text type="secondary">
-          Enter the email on your account and we'll send you a link to reset your password.
-        </Text>
-
-        {submitted ? (
-          <Alert
-            style={{ marginTop: 24 }}
-            type="success"
-            showIcon
-            message="Check your email"
-            description="If an account exists for that email address, we've sent a link to reset your password."
-          />
-        ) : (
-          <Form
-            form={form}
-            layout="vertical"
-            onFinish={onFinish}
-            style={{ marginTop: 24 }}
-            requiredMark={false}
-          >
-            {error && (
-              <Alert
-                style={{ marginBottom: 16 }}
-                type="error"
-                showIcon
-                message={error}
-                closable
-                onClose={() => setError(null)}
-              />
-            )}
-
-            <Form.Item
-              name="email"
-              label="Email"
-              rules={[
-                { required: true, message: 'Please enter your email address.' },
-                { type: 'email', message: 'Please enter a valid email address.' },
-              ]}
-            >
-              <Input prefix={<MailOutlined />} placeholder="you@example.com" autoFocus />
-            </Form.Item>
-
-            <Form.Item>
-              <Button type="primary" htmlType="submit" loading={loading} block>
-                Send reset link
-              </Button>
-            </Form.Item>
-          </Form>
-        )}
-
-        <div style={{ marginTop: 16, textAlign: 'center' }}>
-          <Link to="/login">Back to login</Link>
+    <div className="auth-page">
+      <aside className="auth-context">
+        <div className="brand" aria-label="BorneOPS">
+          <span className="brand__mark" aria-hidden="true">
+            <DeploymentUnitOutlined />
+          </span>
+          <span>
+            <span className="brand__name">BorneOPS</span>
+            <span className="brand__descriptor">Charge network control</span>
+          </span>
         </div>
-      </Card>
+
+        <div className="auth-context__content">
+          <p className="auth-context__eyebrow">Account recovery</p>
+          <h1 className="auth-context__title">
+            Restore access without exposing operator accounts.
+          </h1>
+          <p className="auth-context__copy">
+            Recovery requests use a privacy-preserving response and a time-limited
+            link to keep operational identities protected.
+          </p>
+        </div>
+
+        <div className="auth-context__footer">
+          <span className="auth-context__status" aria-hidden="true" />
+          Protected account recovery
+        </div>
+      </aside>
+
+      <main className="auth-main">
+        <div className="auth-panel">
+          <div className="auth-heading">
+            <p className="section-eyebrow">Account recovery</p>
+            <Title level={2}>Reset your password</Title>
+            <Text className="auth-heading__copy">
+              Enter your work email and we’ll send password reset instructions.
+            </Text>
+          </div>
+
+          {submitted ? (
+            <>
+              <Alert
+                type="success"
+                showIcon
+                message="Check your email"
+                description="If an account exists for that email address, we’ve sent a link to reset your password."
+              />
+              <div className="security-note">
+                <SafetyCertificateOutlined aria-hidden="true" />
+                <span>The reset link is time-limited for account security.</span>
+              </div>
+            </>
+          ) : (
+            <Form
+              className="auth-form"
+              form={form}
+              layout="vertical"
+              onFinish={onFinish}
+              requiredMark={false}
+            >
+              {error && (
+                <Alert
+                  className="auth-alert"
+                  type="error"
+                  showIcon
+                  message={error}
+                  closable
+                  onClose={() => setError(null)}
+                />
+              )}
+
+              <Form.Item
+                name="email"
+                label="Work email"
+                rules={[
+                  { required: true, message: 'Please enter your email address.' },
+                  { type: 'email', message: 'Please enter a valid email address.' },
+                ]}
+              >
+                <Input
+                  prefix={<MailOutlined aria-hidden="true" />}
+                  placeholder="operator@company.com"
+                  autoComplete="email"
+                  autoFocus
+                />
+              </Form.Item>
+
+              <Form.Item className="auth-form__action">
+                <Button type="primary" htmlType="submit" loading={loading} block>
+                  Send reset instructions
+                </Button>
+              </Form.Item>
+            </Form>
+          )}
+
+          <div className="auth-panel__footer">
+            <Link to="/login">
+              <ArrowLeftOutlined aria-hidden="true" /> Back to sign in
+            </Link>
+          </div>
+        </div>
+      </main>
     </div>
   );
 }
