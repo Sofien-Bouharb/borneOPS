@@ -16,14 +16,20 @@ class DatabaseSeeder extends Seeder
     public function run(): void
     {
         // User::factory(10)->create();
-User::firstOrCreate(
-    ['email' => 'test@example.com'],
-    [
-        'name' => 'Test User',
-        'password' => 'password',
-    ]
-);
+        User::firstOrCreate(
+            ['email' => 'test@example.com'],
+            [
+                'name' => 'Test User',
+                'password' => 'password',
+            ]
+        );
 
-         $this->call(RolesAndPermissionsSeeder::class);
+        $this->call(RolesAndPermissionsSeeder::class);
+
+        \App\Models\Organization::factory()
+            ->count(3)
+            ->has(\App\Models\Site::factory()->count(2)
+                ->has(\App\Models\ChargingStation::factory()->count(3)))
+            ->create();
     }
 }
