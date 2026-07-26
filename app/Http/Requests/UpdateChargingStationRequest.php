@@ -45,6 +45,8 @@ class UpdateChargingStationRequest extends FormRequest
             'ocpp_version' => [
                 'sometimes', 'required', 'in:1.6,2.0.1',
             ],
+            'reason' => ['nullable', 'string', 'max:255'],
+            'comment' => ['nullable', 'string', 'max:1000'],
         ];
     }
 

@@ -1,7 +1,7 @@
 <?php
 
 namespace App\Http\Requests;
-
+use Illuminate\Contracts\Validation\Validator as ValidatorContract;
 use Illuminate\Foundation\Http\FormRequest;
 
 class StoreChargingStationRequest extends FormRequest
@@ -30,4 +30,16 @@ class StoreChargingStationRequest extends FormRequest
             'site_id' => ['nullable', 'integer', 'exists:sites,id'],
         ];
     }
+    public function withValidator(\Illuminate\Contracts\Validation\Validator $validator): void
+{
+    $validator->after(function (\Illuminate\Contracts\Validation\Validator $validator) {
+        $submitted = $validator->getData();
+        if (!empty($submitted['site_id'] ?? null) && !empty($submitted['address'] ?? null)) {
+            $validator->errors()->add(
+                'address',
+                'address cannot be set at creation time when site_id is also provided — the site\'s address will be used.'
+            );
+        }
+    });
+}
 }
