@@ -10,7 +10,7 @@ return new class extends Migration
     {
         Schema::create('sites', function (Blueprint $table) {
             $table->id();
-            $table->foreignId('organization_id')->constrained()->cascadeOnDelete();
+            $table->foreignId('organization_id')->constrained()->restrictOnDelete();
             $table->string('name');
             $table->string('address');
             $table->decimal('latitude', 10, 7)->nullable();

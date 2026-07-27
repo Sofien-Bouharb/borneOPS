@@ -39,9 +39,20 @@ class ChargingStationService
         });
     }
 
-    public function update(ChargingStation $station, array $data, ?User $performedBy): ChargingStation
-{
-    return DB::transaction(function () use ($station, $data, $performedBy) {
+public function update(ChargingStation $station, array $data, ?User $performedBy): ChargingStation
+    {
+        if ($station->administrative_status !== 'commissioning') {
+            $sensitiveFields = ['reference', 'serial_number', 'ocpp_identifier', 'ocpp_version'];
+
+            foreach ($sensitiveFields as $field) {
+                if (array_key_exists($field, $data) && $data[$field] !== $station->{$field}) {
+                    throw new InvalidStateTransitionException(
+                        "The field '{$field}' cannot be changed once a station has left commissioning."
+                    );
+                }
+            }
+        }
+
         $reason = $data['reason'] ?? null;
         $comment = $data['comment'] ?? null;
 
@@ -58,22 +69,23 @@ class ChargingStationService
             $newValues[$field] = $newValue;
         }
 
-        $station->save();
+        return DB::transaction(function () use ($station, $oldValues, $newValues, $reason, $comment, $performedBy) {
+            $station->save();
 
-        ChargingStationHistory::create([
-            'charging_station_id' => $station->id,
-            'event_type' => 'updated',
-            'old_values' => $oldValues,
-            'new_values' => $newValues,
-            'reason' => $reason,
-            'comment' => $comment,
-            'source' => 'user',
-            'performed_by' => $performedBy?->id,
-        ]);
+            ChargingStationHistory::create([
+                'charging_station_id' => $station->id,
+                'event_type' => 'updated',
+                'old_values' => $oldValues,
+                'new_values' => $newValues,
+                'reason' => $reason,
+                'comment' => $comment,
+                'source' => 'user',
+                'performed_by' => $performedBy?->id,
+            ]);
 
-        return $station;
-    });
-}
+            return $station;
+        });
+    }
 public function updateOperationalStatus(
     ChargingStation $station,
     string $operationalStatus,
@@ -107,16 +119,21 @@ public function updateOperationalStatus(
         return $station;
     });
 }
-public function assign(
-    ChargingStation $station,
-    ?int $siteId,
-    ?string $reason,
-    ?string $comment,
-    ?User $performedBy
-): ChargingStation {
+public function assign(ChargingStation $station, ?int $siteId, ?string $reason, ?string $comment, ?User $performedBy): ChargingStation
+{
     if ($station->trashed()) {
+        throw new InvalidStateTransitionException('A soft-deleted station cannot be reassigned.');
+    }
+
+    if ($siteId === null && $station->administrative_status !== 'commissioning') {
         throw new InvalidStateTransitionException(
-            'A soft-deleted station cannot be reassigned.'
+            'Only a station in commissioning may be unassigned.'
+        );
+    }
+
+    if ($siteId !== null && $siteId === $station->site_id) {
+        throw new InvalidStateTransitionException(
+            'The station is already assigned to this site.'
         );
     }
 

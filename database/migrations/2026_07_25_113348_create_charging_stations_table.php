@@ -30,7 +30,7 @@ return new class extends Migration
             $table->enum('administrative_status', [
                 'commissioning', 'active', 'disabled', 'decommissioned',
             ])->default('commissioning');
-            $table->foreignId('site_id')->nullable()->constrained()->nullOnDelete();
+            $table->foreignId('site_id')->nullable()->constrained()->restrictOnDelete();
             $table->timestamps();
             $table->softDeletes();
         });
