@@ -3,23 +3,24 @@ import { useNavigate } from 'react-router-dom';
 import { Table, Tag, Input, Select, Button, Space, Card, Row, Col, Typography } from 'antd';
 import { PlusOutlined, ReloadOutlined, SearchOutlined } from '@ant-design/icons';
 import { useStations, useOrganizations, useSites, type StationFilters, type ChargingStation } from '../api/stations';
+import '../../css/stations.css';
 
 const { Title } = Typography;
 
 const ADMIN_STATUS_COLORS: Record<string, string> = {
-  commissioning: 'blue',
-  active: 'green',
-  disabled: 'orange',
+  commissioning: 'processing',
+  active: 'success',
+  disabled: 'warning',
   decommissioned: 'default',
 };
 
 const OP_STATUS_COLORS: Record<string, string> = {
-  available: 'green',
-  occupied: 'blue',
-  out_of_service: 'red',
-  maintenance: 'orange',
+  available: 'success',
+  occupied: 'processing',
+  out_of_service: 'error',
+  maintenance: 'warning',
   disconnected: 'default',
-  fault: 'red',
+  fault: 'error',
 };
 
 export default function StationListPage() {
@@ -63,7 +64,9 @@ export default function StationListPage() {
       dataIndex: 'administrative_status',
       key: 'administrative_status',
       render: (status: string) => (
-        <Tag color={ADMIN_STATUS_COLORS[status] ?? 'default'}>{status}</Tag>
+        <Tag className="station-status-tag" color={ADMIN_STATUS_COLORS[status] ?? 'default'}>
+          {status}
+        </Tag>
       ),
     },
     {
@@ -71,19 +74,21 @@ export default function StationListPage() {
       dataIndex: 'operational_status',
       key: 'operational_status',
       render: (status: string) => (
-        <Tag color={OP_STATUS_COLORS[status] ?? 'default'}>{status}</Tag>
+        <Tag className="station-status-tag" color={OP_STATUS_COLORS[status] ?? 'default'}>
+          {status}
+        </Tag>
       ),
     },
   ];
 
   return (
-    <div style={{ padding: '24px' }}>
-      <Row justify="space-between" align="middle" style={{ marginBottom: 16 }}>
+    <main className="station-page station-page--list">
+      <Row className="station-page-header" justify="space-between" align="middle" gutter={[20, 16]}>
         <Col>
-          <Title level={3} style={{ margin: 0 }}>Bornes de recharge</Title>
+          <Title className="station-page-title" level={3}>Bornes de recharge</Title>
         </Col>
         <Col>
-          <Space>
+          <Space className="station-page-actions" wrap>
             <Button icon={<ReloadOutlined />} onClick={() => refetch()}>
               Actualiser
             </Button>
@@ -94,10 +99,11 @@ export default function StationListPage() {
         </Col>
       </Row>
 
-      <Card size="small" style={{ marginBottom: 16 }}>
+      <Card className="station-filter-card" size="small">
         <Row gutter={[12, 12]}>
           <Col xs={24} sm={12} md={6}>
             <Input
+              className="station-filter-control"
               placeholder="Rechercher..."
               prefix={<SearchOutlined />}
               allowClear
@@ -106,9 +112,9 @@ export default function StationListPage() {
           </Col>
           <Col xs={24} sm={12} md={5}>
             <Select
+              className="station-filter-control"
               placeholder="Statut admin."
               allowClear
-              style={{ width: '100%' }}
               onChange={(v) => updateFilter('administrative_status', v)}
               options={[
                 { value: 'commissioning', label: 'Commissioning' },
@@ -120,9 +126,9 @@ export default function StationListPage() {
           </Col>
           <Col xs={24} sm={12} md={5}>
             <Select
+              className="station-filter-control"
               placeholder="État opérationnel"
               allowClear
-              style={{ width: '100%' }}
               onChange={(v) => updateFilter('operational_status', v)}
               options={[
                 { value: 'available', label: 'Available' },
@@ -136,18 +142,18 @@ export default function StationListPage() {
           </Col>
           <Col xs={24} sm={12} md={4}>
             <Select
+              className="station-filter-control"
               placeholder="Organisation"
               allowClear
-              style={{ width: '100%' }}
               onChange={(v) => updateFilter('organization_id', v)}
               options={organizations?.map((o) => ({ value: o.id, label: o.name })) ?? []}
             />
           </Col>
           <Col xs={24} sm={12} md={4}>
             <Select
+              className="station-filter-control"
               placeholder="Site"
               allowClear
-              style={{ width: '100%' }}
               onChange={(v) => updateFilter('site_id', v)}
               options={sites?.map((s) => ({ value: s.id, label: s.name })) ?? []}
             />
@@ -155,24 +161,28 @@ export default function StationListPage() {
         </Row>
       </Card>
 
-      <Table
-        rowKey="id"
-        columns={columns}
-        dataSource={data?.data ?? []}
-        loading={isLoading}
-        pagination={{
-          current: data?.meta.current_page ?? 1,
-          pageSize: data?.meta.per_page ?? 15,
-          total: data?.meta.total ?? 0,
-          onChange: (page) => setFilters((prev) => ({ ...prev, page })),
-          showTotal: (total) => `${total} borne(s)`,
-          showSizeChanger: false,
-        }}
-        onRow={(record) => ({
-          onClick: () => navigate(`/stations/${record.id}`),
-          style: { cursor: 'pointer' },
-        })}
-      />
-    </div>
+      <Card className="station-table-card">
+        <Table
+          className="station-table"
+          rowKey="id"
+          columns={columns}
+          dataSource={data?.data ?? []}
+          loading={isLoading}
+          scroll={{ x: 920 }}
+          pagination={{
+            current: data?.meta.current_page ?? 1,
+            pageSize: data?.meta.per_page ?? 15,
+            total: data?.meta.total ?? 0,
+            onChange: (page) => setFilters((prev) => ({ ...prev, page })),
+            showTotal: (total) => `${total} borne(s)`,
+            showSizeChanger: false,
+          }}
+          onRow={(record) => ({
+            onClick: () => navigate(`/stations/${record.id}`),
+            className: 'station-table__row',
+          })}
+        />
+      </Card>
+    </main>
   );
 }

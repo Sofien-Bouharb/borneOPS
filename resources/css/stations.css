@@ -1,0 +1,415 @@
+.station-page {
+    width: min(100%, 1240px);
+    min-height: 100vh;
+    margin: 0 auto;
+    padding: clamp(28px, 4vw, 48px) clamp(20px, 3vw, 32px) 64px;
+}
+
+.station-page--form {
+    max-width: 920px;
+}
+
+.station-page--detail {
+    max-width: 1120px;
+}
+
+.station-page-header,
+.station-detail-header {
+    margin-bottom: 22px;
+}
+
+.station-page-title.ant-typography {
+    margin: 0;
+    letter-spacing: -0.025em;
+}
+
+.station-page-title--form.ant-typography {
+    margin-bottom: 22px;
+}
+
+.station-page-actions {
+    justify-content: flex-end;
+}
+
+.station-back-button.ant-btn {
+    height: auto;
+    margin-bottom: 16px;
+    padding: 0;
+}
+
+.station-filter-card.ant-card,
+.station-table-card.ant-card,
+.station-form-card.ant-card,
+.station-info-card.ant-card,
+.station-history-card.ant-card {
+    border-color: color-mix(in srgb, currentColor 14%, transparent);
+    box-shadow: 0 8px 24px rgba(0, 0, 0, 0.045);
+}
+
+.station-filter-card {
+    margin-bottom: 18px;
+}
+
+.station-filter-card .ant-card-body {
+    padding: 16px;
+}
+
+.station-filter-control,
+.station-form-control {
+    width: 100%;
+}
+
+.station-table-card {
+    overflow: hidden;
+}
+
+.station-table-card .ant-card-body {
+    padding: 0;
+}
+
+.station-table .ant-table-thead > tr > th {
+    padding-block: 13px;
+    font-size: 12px;
+    font-weight: 750;
+    letter-spacing: 0.035em;
+    text-transform: uppercase;
+}
+
+.station-table .ant-table-tbody > tr > td {
+    padding-block: 15px;
+}
+
+.station-table .station-table__row {
+    cursor: pointer;
+}
+
+.station-table .station-table__row > td {
+    transition:
+        background-color 160ms ease,
+        box-shadow 160ms ease;
+}
+
+.station-table .station-table__row:hover > td:first-child {
+    box-shadow: inset 3px 0 0 currentColor;
+}
+
+.station-table .station-table__row a {
+    display: inline-block;
+    max-width: 260px;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    vertical-align: bottom;
+    white-space: nowrap;
+}
+
+.station-table .ant-table-pagination.ant-pagination {
+    margin: 18px 20px;
+}
+
+.station-status-tag.ant-tag {
+    min-width: 88px;
+    margin: 0;
+    padding-inline: 9px;
+    text-align: center;
+    font-size: 11px;
+    font-weight: 750;
+    letter-spacing: 0.045em;
+    line-height: 24px;
+    text-transform: uppercase;
+}
+
+.station-form-card .ant-card-body {
+    padding: clamp(22px, 4vw, 34px);
+}
+
+.station-form-section + .station-form-section {
+    margin-top: 8px;
+    padding-top: 26px;
+    border-top: 1px solid color-mix(in srgb, currentColor 12%, transparent);
+}
+
+.station-form-section--last {
+    padding-top: 22px;
+}
+
+.station-form-section__title.ant-typography {
+    margin: 0 0 20px;
+    font-size: 15px;
+    letter-spacing: 0.01em;
+}
+
+.station-form .ant-form-item-label > label {
+    font-weight: 650;
+}
+
+.station-form-actions.ant-form-item {
+    margin: 28px 0 0;
+    padding-top: 22px;
+    border-top: 1px solid color-mix(in srgb, currentColor 12%, transparent);
+    text-align: right;
+}
+
+.station-form-alert {
+    margin-bottom: 18px;
+}
+
+.station-detail-header {
+    align-items: flex-start;
+}
+
+.station-detail-heading {
+    min-width: 220px;
+}
+
+.station-status-list {
+    margin-top: 10px;
+}
+
+.station-detail-actions {
+    max-width: 680px;
+    justify-content: flex-end;
+}
+
+.station-action--positive.ant-btn-primary {
+    border-color: #157a6e;
+    background: #157a6e;
+}
+
+.station-action--positive.ant-btn-primary:not(:disabled):hover,
+.station-action--positive.ant-btn-primary:not(:disabled):focus-visible {
+    border-color: #157a6e;
+    background: #157a6e;
+    filter: brightness(0.92);
+}
+
+.station-action--destructive.ant-btn {
+    font-weight: 700;
+}
+
+.station-info-card {
+    margin-bottom: 28px;
+}
+
+.station-info-card .ant-card-body {
+    padding: clamp(16px, 3vw, 26px);
+}
+
+.station-descriptions .ant-descriptions-item-label {
+    width: 156px;
+    font-size: 12px;
+    font-weight: 700;
+}
+
+.station-descriptions .ant-descriptions-item-content {
+    min-width: 0;
+    overflow-wrap: anywhere;
+}
+
+.station-history-section {
+    margin-top: 4px;
+}
+
+.station-section-divider.ant-divider {
+    margin: 0 0 16px;
+    font-size: 16px;
+    font-weight: 700;
+}
+
+.station-history-card .ant-card-body {
+    padding: clamp(22px, 4vw, 32px);
+}
+
+.station-history-timeline {
+    margin-top: 4px;
+}
+
+.station-history-timeline .ant-timeline-item {
+    padding-bottom: 26px;
+}
+
+.station-history-timeline .ant-timeline-item:last-child {
+    padding-bottom: 8px;
+}
+
+.station-history-timeline .ant-timeline-item-content {
+    min-height: 34px;
+}
+
+.station-history-entry {
+    min-width: 0;
+    padding: 2px 0 0 4px;
+}
+
+.station-history-entry__heading {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: baseline;
+    gap: 6px 14px;
+}
+
+.station-history-entry__meta {
+    display: inline-flex;
+    flex-wrap: wrap;
+    gap: 6px 12px;
+    font-size: 13px;
+}
+
+.station-history-entry__reason {
+    margin-top: 6px;
+}
+
+.station-history-entry__change {
+    display: flex;
+    min-width: 0;
+    align-items: center;
+    gap: 8px;
+    margin-top: 9px;
+}
+
+.station-history-entry__change .ant-typography {
+    max-width: calc(50% - 18px);
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.station-history-pagination {
+    justify-content: center;
+    margin-top: 8px;
+}
+
+.station-history-empty {
+    padding: 24px;
+    text-align: center;
+}
+
+.station-action-modal .ant-modal-header {
+    margin-bottom: 22px;
+}
+
+.station-action-form .ant-form-item:last-child {
+    margin-bottom: 4px;
+}
+
+.station-page-state {
+    display: grid;
+    min-height: 320px;
+    place-items: center;
+}
+
+.station-page-error {
+    width: min(calc(100% - 40px), 920px);
+    margin: 28px auto;
+}
+
+@media (max-width: 992px) {
+    .station-page {
+        padding-top: 32px;
+    }
+
+    .station-detail-header {
+        align-items: flex-start;
+        flex-direction: column;
+    }
+
+    .station-detail-header > .ant-col {
+        width: 100%;
+    }
+
+    .station-detail-actions {
+        max-width: none;
+        justify-content: flex-start;
+    }
+}
+
+@media (max-width: 767px) {
+    .station-page {
+        padding-inline: 18px;
+        padding-bottom: 44px;
+    }
+
+    .station-page-header {
+        align-items: flex-start;
+        flex-direction: column;
+    }
+
+    .station-page-header > .ant-col,
+    .station-page-actions,
+    .station-page-actions .ant-space-item {
+        width: 100%;
+    }
+
+    .station-page-actions {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+    }
+
+    .station-page-actions .ant-btn {
+        width: 100%;
+    }
+
+    .station-form-card .ant-card-body {
+        padding: 22px 18px;
+    }
+
+    .station-form-section + .station-form-section {
+        padding-top: 22px;
+    }
+
+    .station-form-actions .ant-space,
+    .station-form-actions .ant-space-item,
+    .station-form-actions .ant-btn {
+        width: 100%;
+    }
+
+    .station-form-actions .ant-space {
+        display: flex;
+    }
+
+    .station-form-actions .ant-space-item {
+        flex: 1;
+    }
+
+    .station-descriptions .ant-descriptions-item-label {
+        width: 132px;
+    }
+
+    .station-detail-actions {
+        display: grid;
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+    }
+
+    .station-detail-actions .ant-space-item,
+    .station-detail-actions .ant-btn {
+        width: 100%;
+    }
+}
+
+@media (max-width: 480px) {
+    .station-page {
+        padding-inline: 14px;
+    }
+
+    .station-page-actions,
+    .station-detail-actions {
+        grid-template-columns: 1fr;
+    }
+
+    .station-status-tag.ant-tag {
+        min-width: 0;
+    }
+
+    .station-descriptions .ant-descriptions-item-label {
+        width: 112px;
+    }
+
+    .station-history-entry__change {
+        align-items: flex-start;
+        flex-direction: column;
+    }
+
+    .station-history-entry__change .ant-typography {
+        width: 100%;
+        max-width: 100%;
+    }
+}

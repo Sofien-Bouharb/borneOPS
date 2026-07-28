@@ -3,6 +3,7 @@ import { useParams, useNavigate } from 'react-router-dom';
 import { Form, Input, InputNumber, Button, Card, Typography, Spin, Alert, Space, message, Row, Col } from 'antd';
 import { ArrowLeftOutlined } from '@ant-design/icons';
 import { useStation, useUpdateStation } from '../api/stations';
+import '../../css/stations.css';
 
 const { Title } = Typography;
 
@@ -36,8 +37,8 @@ export default function StationEditPage() {
     }
   }, [station, form, isCommissioning]);
 
-  if (isLoading) return <Spin style={{ display: 'block', margin: '100px auto' }} />;
-  if (!station) return <Alert type="error" message="Borne introuvable" style={{ margin: 24 }} />;
+  if (isLoading) return <div className="station-page-state"><Spin /></div>;
+  if (!station) return <Alert className="station-page-error" type="error" message="Borne introuvable" />;
 
   const onFinish = async (values: Record<string, unknown>) => {
     try {
@@ -59,103 +60,113 @@ export default function StationEditPage() {
   };
 
   return (
-    <div style={{ padding: '24px', maxWidth: 800, margin: '0 auto' }}>
-      <Button type="link" icon={<ArrowLeftOutlined />} onClick={() => navigate(`/stations/${stationId}`)} style={{ marginBottom: 16, paddingLeft: 0 }}>
+    <main className="station-page station-page--form">
+      <Button className="station-back-button" type="link" icon={<ArrowLeftOutlined />} onClick={() => navigate(`/stations/${stationId}`)}>
         Retour au détail
       </Button>
 
-      <Title level={3}>Modifier — {station.name}</Title>
+      <Title className="station-page-title station-page-title--form" level={3}>Modifier — {station.name}</Title>
 
       {!isCommissioning && (
         <Alert
+          className="station-form-alert"
           type="info"
           message="Les champs sensibles (référence, n° série, identifiant OCPP, version OCPP) ne sont modifiables qu'en phase de commissioning."
-          style={{ marginBottom: 16 }}
           showIcon
         />
       )}
 
-      <Card>
-        <Form form={form} layout="vertical" onFinish={onFinish}>
-          <Row gutter={16}>
-            <Col span={12}>
-              <Form.Item name="name" label="Nom" rules={[{ required: true, message: 'Requis' }]}>
-                <Input />
-              </Form.Item>
-            </Col>
-            <Col span={12}>
-              <Form.Item name="manufacturer" label="Fabricant" rules={[{ required: true, message: 'Requis' }]}>
-                <Input />
-              </Form.Item>
-            </Col>
-          </Row>
+      <Card className="station-form-card">
+        <Form className="station-form" form={form} layout="vertical" onFinish={onFinish}>
+          <section className="station-form-section">
+            <Title className="station-form-section__title" level={5}>Identification</Title>
 
-          <Row gutter={16}>
-            <Col span={12}>
-              <Form.Item name="model" label="Modèle" rules={[{ required: true, message: 'Requis' }]}>
-                <Input />
-              </Form.Item>
-            </Col>
-            <Col span={12}>
-              <Form.Item name="firmware_version" label="Version firmware">
-                <Input />
-              </Form.Item>
-            </Col>
-          </Row>
+            <Row gutter={[20, 0]}>
+              <Col xs={24} sm={12}>
+                <Form.Item name="name" label="Nom" rules={[{ required: true, message: 'Requis' }]}>
+                  <Input />
+                </Form.Item>
+              </Col>
+              <Col xs={24} sm={12}>
+                <Form.Item name="manufacturer" label="Fabricant" rules={[{ required: true, message: 'Requis' }]}>
+                  <Input />
+                </Form.Item>
+              </Col>
+            </Row>
 
-          <Row gutter={16}>
-            <Col span={8}>
-              <Form.Item name="power_kw" label="Puissance (kW)" rules={[{ required: true, message: 'Requis' }]}>
-                <InputNumber min={0.01} step={0.01} style={{ width: '100%' }} />
-              </Form.Item>
-            </Col>
-            <Col span={8}>
-              <Form.Item name="latitude" label="Latitude" rules={[{ required: true, message: 'Requis' }]}>
-                <InputNumber min={-90} max={90} step={0.0000001} style={{ width: '100%' }} />
-              </Form.Item>
-            </Col>
-            <Col span={8}>
-              <Form.Item name="longitude" label="Longitude" rules={[{ required: true, message: 'Requis' }]}>
-                <InputNumber min={-180} max={180} step={0.0000001} style={{ width: '100%' }} />
-              </Form.Item>
-            </Col>
-          </Row>
+            <Row gutter={[20, 0]}>
+              <Col xs={24} sm={12}>
+                <Form.Item name="model" label="Modèle" rules={[{ required: true, message: 'Requis' }]}>
+                  <Input />
+                </Form.Item>
+              </Col>
+              <Col xs={24} sm={12}>
+                <Form.Item name="firmware_version" label="Version firmware">
+                  <Input />
+                </Form.Item>
+              </Col>
+            </Row>
+          </section>
+
+          <section className="station-form-section">
+            <Title className="station-form-section__title" level={5}>Capacité et localisation</Title>
+
+            <Row gutter={[20, 0]}>
+              <Col xs={24} sm={8}>
+                <Form.Item name="power_kw" label="Puissance (kW)" rules={[{ required: true, message: 'Requis' }]}>
+                  <InputNumber className="station-form-control" min={0.01} step={0.01} />
+                </Form.Item>
+              </Col>
+              <Col xs={24} sm={8}>
+                <Form.Item name="latitude" label="Latitude" rules={[{ required: true, message: 'Requis' }]}>
+                  <InputNumber className="station-form-control" min={-90} max={90} step={0.0000001} />
+                </Form.Item>
+              </Col>
+              <Col xs={24} sm={8}>
+                <Form.Item name="longitude" label="Longitude" rules={[{ required: true, message: 'Requis' }]}>
+                  <InputNumber className="station-form-control" min={-180} max={180} step={0.0000001} />
+                </Form.Item>
+              </Col>
+            </Row>
+          </section>
 
           {isCommissioning && (
-            <>
-              <Title level={5} style={{ marginTop: 16 }}>Champs sensibles (commissioning uniquement)</Title>
-              <Row gutter={16}>
-                <Col span={12}>
+            <section className="station-form-section station-form-section--sensitive">
+              <Title className="station-form-section__title" level={5}>Champs sensibles (commissioning uniquement)</Title>
+              <Row gutter={[20, 0]}>
+                <Col xs={24} sm={12}>
                   <Form.Item name="reference" label="Référence">
                     <Input />
                   </Form.Item>
                 </Col>
-                <Col span={12}>
+                <Col xs={24} sm={12}>
                   <Form.Item name="serial_number" label="Numéro de série">
                     <Input />
                   </Form.Item>
                 </Col>
               </Row>
-              <Row gutter={16}>
-                <Col span={12}>
+              <Row gutter={[20, 0]}>
+                <Col xs={24} sm={12}>
                   <Form.Item name="ocpp_identifier" label="Identifiant OCPP">
                     <Input />
                   </Form.Item>
                 </Col>
-                <Col span={12}>
+                <Col xs={24} sm={12}>
                   <Form.Item name="ocpp_version" label="Version OCPP">
                     <Input disabled />
                   </Form.Item>
                 </Col>
               </Row>
-            </>
+            </section>
           )}
 
-          <Form.Item name="reason" label="Raison de la modification">
-            <Input />
-          </Form.Item>
+          <section className="station-form-section station-form-section--last">
+            <Form.Item name="reason" label="Raison de la modification">
+              <Input />
+            </Form.Item>
+          </section>
 
-          <Form.Item style={{ marginBottom: 0, textAlign: 'right' }}>
+          <Form.Item className="station-form-actions">
             <Space>
               <Button onClick={() => navigate(`/stations/${stationId}`)}>Annuler</Button>
               <Button type="primary" htmlType="submit" loading={updateMutation.isPending}>
@@ -165,6 +176,6 @@ export default function StationEditPage() {
           </Form.Item>
         </Form>
       </Card>
-    </div>
+    </main>
   );
 }

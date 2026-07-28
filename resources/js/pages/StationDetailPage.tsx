@@ -9,15 +9,16 @@ import {
   CloseCircleOutlined, SwapOutlined, ThunderboltOutlined,
 } from '@ant-design/icons';
 import { useStation, useStationHistory, useStationAction, useSites } from '../api/stations';
+import '../../css/stations.css';
 
 const { Title, Text } = Typography;
 
 const ADMIN_COLORS: Record<string, string> = {
-  commissioning: 'blue', active: 'green', disabled: 'orange', decommissioned: 'default',
+  commissioning: 'processing', active: 'success', disabled: 'warning', decommissioned: 'default',
 };
 const OP_COLORS: Record<string, string> = {
-  available: 'green', occupied: 'blue', out_of_service: 'red',
-  maintenance: 'orange', disconnected: 'default', fault: 'red',
+  available: 'success', occupied: 'processing', out_of_service: 'error',
+  maintenance: 'warning', disconnected: 'default', fault: 'error',
 };
 const EVENT_COLORS: Record<string, string> = {
   created: 'blue', updated: 'gray', state_changed: 'orange',
@@ -34,11 +35,12 @@ function ActionModal({
   const [form] = Form.useForm();
   return (
     <Modal
+      className="station-action-modal"
       open={open} title={title} onCancel={() => { form.resetFields(); onCancel(); }}
       onOk={() => form.validateFields().then((vals) => { onOk(vals); form.resetFields(); })}
       confirmLoading={loading} destroyOnClose
     >
-      <Form form={form} layout="vertical">
+      <Form className="station-action-form" form={form} layout="vertical">
         {children}
         <Form.Item name="reason" label="Raison" rules={reasonRequired ? [{ required: true, message: 'Requis' }] : []}>
           <Input />
@@ -64,8 +66,8 @@ export default function StationDetailPage() {
 
   const [modal, setModal] = useState<string | null>(null);
 
-  if (isLoading) return <Spin style={{ display: 'block', margin: '100px auto' }} />;
-  if (!station) return <Alert type="error" message="Borne introuvable" style={{ margin: 24 }} />;
+  if (isLoading) return <div className="station-page-state"><Spin /></div>;
+  if (!station) return <Alert className="station-page-error" type="error" message="Borne introuvable" />;
 
   const isDecommissioned = station.administrative_status === 'decommissioned';
   const isCommissioning = station.administrative_status === 'commissioning';
@@ -84,42 +86,46 @@ export default function StationDetailPage() {
   };
 
   return (
-    <div style={{ padding: '24px', maxWidth: 1000, margin: '0 auto' }}>
-      <Button type="link" icon={<ArrowLeftOutlined />} onClick={() => navigate('/stations')} style={{ marginBottom: 16, paddingLeft: 0 }}>
+    <main className="station-page station-page--detail">
+      <Button className="station-back-button" type="link" icon={<ArrowLeftOutlined />} onClick={() => navigate('/stations')}>
         Retour à la liste
       </Button>
 
-      <Row justify="space-between" align="middle" style={{ marginBottom: 16 }}>
-        <Col>
-          <Title level={3} style={{ margin: 0 }}>{station.name}</Title>
-          <Space style={{ marginTop: 8 }}>
-            <Tag color={ADMIN_COLORS[station.administrative_status]}>{station.administrative_status}</Tag>
-            <Tag color={OP_COLORS[station.operational_status]}>{station.operational_status}</Tag>
+      <Row className="station-detail-header" justify="space-between" align="middle" gutter={[24, 18]}>
+        <Col className="station-detail-heading">
+          <Title className="station-page-title" level={3}>{station.name}</Title>
+          <Space className="station-status-list" wrap>
+            <Tag className="station-status-tag" color={ADMIN_COLORS[station.administrative_status]}>
+              {station.administrative_status}
+            </Tag>
+            <Tag className="station-status-tag" color={OP_COLORS[station.operational_status]}>
+              {station.operational_status}
+            </Tag>
           </Space>
         </Col>
         <Col>
           {!isDecommissioned && (
-            <Space wrap>
+            <Space className="station-detail-actions" wrap>
               <Button icon={<EditOutlined />} onClick={() => navigate(`/stations/${stationId}/edit`)}>
                 Modifier
               </Button>
               {(isCommissioning || isDisabled) && (
-                <Button type="primary" icon={<CheckCircleOutlined />} onClick={() => setModal('reactivate')}>
+                <Button className="station-action--positive" type="primary" icon={<CheckCircleOutlined />} onClick={() => setModal('reactivate')}>
                   {isCommissioning ? 'Activer' : 'Réactiver'}
                 </Button>
               )}
               {isActive && (
-                <Button danger icon={<StopOutlined />} onClick={() => setModal('disable')}>
+                <Button className="station-action--warning" danger icon={<StopOutlined />} onClick={() => setModal('disable')}>
                   Désactiver
                 </Button>
               )}
-              <Button icon={<ThunderboltOutlined />} onClick={() => setModal('state')}>
+              <Button className="station-action--neutral" icon={<ThunderboltOutlined />} onClick={() => setModal('state')}>
                 État opérationnel
               </Button>
               <Button icon={<SwapOutlined />} onClick={() => setModal('assignment')}>
                 Affecter
               </Button>
-              <Button danger icon={<CloseCircleOutlined />} onClick={() => setModal('decommission')}>
+              <Button className="station-action--destructive" type="primary" danger icon={<CloseCircleOutlined />} onClick={() => setModal('decommission')}>
                 Décommissionner
               </Button>
             </Space>
@@ -127,8 +133,8 @@ export default function StationDetailPage() {
         </Col>
       </Row>
 
-      <Card style={{ marginBottom: 24 }}>
-        <Descriptions column={{ xs: 1, sm: 2 }} bordered size="small">
+      <Card className="station-info-card">
+        <Descriptions className="station-descriptions" column={{ xs: 1, sm: 2 }} bordered size="small">
           <Descriptions.Item label="Référence">{station.reference}</Descriptions.Item>
           <Descriptions.Item label="N° série">{station.serial_number}</Descriptions.Item>
           <Descriptions.Item label="Modèle">{station.model}</Descriptions.Item>
@@ -146,44 +152,63 @@ export default function StationDetailPage() {
         </Descriptions>
       </Card>
 
-      <Divider orientation={'left' as any}>Historique</Divider>
+      <section className="station-history-section">
+        <Divider className="station-section-divider" orientation={'left' as any}>Historique</Divider>
 
-      {historyData?.data.length ? (
-        <>
-          <Timeline
-            items={historyData.data.map((h) => ({
-              color: EVENT_COLORS[h.event_type] ?? 'gray',
-              children: (
-                <div key={h.id}>
-                  <Text strong>{h.event_type}</Text>
-                  <Text type="secondary" style={{ marginLeft: 8 }}>
-                    {new Date(h.created_at).toLocaleString('fr-TN')}
-                  </Text>
-                  {h.performed_by && (
-                    <Text type="secondary" style={{ marginLeft: 8 }}>
-                      par {h.performed_by.name}
-                    </Text>
-                  )}
-                  {h.reason && <div><Text type="secondary">Raison : {h.reason}</Text></div>}
-                  {h.old_values && (
-                    <div><Text code>{JSON.stringify(h.old_values)}</Text> → <Text code>{JSON.stringify(h.new_values)}</Text></div>
-                  )}
-                </div>
-              ),
-            }))}
-          />
-          <Pagination
-            current={historyData.meta.current_page}
-            total={historyData.meta.total}
-            pageSize={historyData.meta.per_page}
-            onChange={setHistoryPage}
-            size="small"
-            style={{ textAlign: 'center' }}
-          />
-        </>
-      ) : (
-        <Text type="secondary">Aucun historique</Text>
-      )}
+        <Card className="station-history-card">
+          {historyData?.data.length ? (
+            <>
+              <Timeline
+                className="station-history-timeline"
+                items={historyData.data.map((h) => ({
+                  color: EVENT_COLORS[h.event_type] ?? 'gray',
+                  children: (
+                    <div className="station-history-entry" key={h.id}>
+                      <div className="station-history-entry__heading">
+                        <Text strong>{h.event_type}</Text>
+                        <span className="station-history-entry__meta">
+                          <Text type="secondary">
+                            {new Date(h.created_at).toLocaleString('fr-TN')}
+                          </Text>
+                          {h.performed_by && (
+                            <Text type="secondary">
+                              par {h.performed_by.name}
+                            </Text>
+                          )}
+                        </span>
+                      </div>
+                      {h.reason && (
+                        <div className="station-history-entry__reason">
+                          <Text type="secondary">Raison : {h.reason}</Text>
+                        </div>
+                      )}
+                      {h.old_values && (
+                        <div className="station-history-entry__change">
+                          <Text code>{JSON.stringify(h.old_values)}</Text>
+                          <span aria-hidden="true">→</span>
+                          <Text code>{JSON.stringify(h.new_values)}</Text>
+                        </div>
+                      )}
+                    </div>
+                  ),
+                }))}
+              />
+              <Pagination
+                className="station-history-pagination"
+                current={historyData.meta.current_page}
+                total={historyData.meta.total}
+                pageSize={historyData.meta.per_page}
+                onChange={setHistoryPage}
+                size="small"
+              />
+            </>
+          ) : (
+            <div className="station-history-empty">
+              <Text type="secondary">Aucun historique</Text>
+            </div>
+          )}
+        </Card>
+      </section>
 
       <ActionModal open={modal === 'disable'} title="Désactiver la borne" onCancel={() => setModal(null)}
         onOk={(vals) => doAction('disable', vals)} loading={actionMutation.isPending} />
@@ -218,6 +243,6 @@ export default function StationDetailPage() {
           />
         </Form.Item>
       </ActionModal>
-    </div>
+    </main>
   );
 }
