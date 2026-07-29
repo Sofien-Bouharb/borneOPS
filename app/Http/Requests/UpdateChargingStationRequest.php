@@ -50,26 +50,34 @@ class UpdateChargingStationRequest extends FormRequest
         ];
     }
 
+    protected const FIELD_LABELS_FR = [
+        'reference' => 'Référence',
+        'serial_number' => 'Numéro de série',
+        'ocpp_identifier' => 'Identifiant OCPP',
+        'ocpp_version' => 'Version OCPP',
+    ];
+
     public function withValidator(ValidatorContract $validator): void
-{
-    $validator->after(function (ValidatorContract $validator) {
-        /** @var ChargingStation|null $station */
-        $station = $this->route('station');
+    {
+        $validator->after(function (ValidatorContract $validator) {
+            /** @var ChargingStation|null $station */
+            $station = $this->route('station');
 
-        if (!$station || $station->administrative_status === 'commissioning') {
-            return;
-        }
-
-        $submitted = $validator->getData();
-
-        foreach (self::SENSITIVE_FIELDS as $field) {
-            if (array_key_exists($field, $submitted)) {
-                $validator->errors()->add(
-                    $field,
-                    "The {$field} field can only be changed while the station is in commissioning."
-                );
+            if (!$station || $station->administrative_status === 'commissioning') {
+                return;
             }
-        }
-    });
-}
+
+            $submitted = $validator->getData();
+
+            foreach (self::SENSITIVE_FIELDS as $field) {
+                if (array_key_exists($field, $submitted)) {
+                    $label = self::FIELD_LABELS_FR[$field] ?? $field;
+                    $validator->errors()->add(
+                        $field,
+                        "Le champ « {$label} » ne peut être modifié qu'en phase de mise en service."
+                    );
+                }
+            }
+        });
+    }
 }

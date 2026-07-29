@@ -46,8 +46,15 @@ public function update(ChargingStation $station, array $data, ?User $performedBy
 
             foreach ($sensitiveFields as $field) {
                 if (array_key_exists($field, $data) && $data[$field] !== $station->{$field}) {
+                    $labels = [
+                        'reference' => 'Référence',
+                        'serial_number' => 'Numéro de série',
+                        'ocpp_identifier' => 'Identifiant OCPP',
+                        'ocpp_version' => 'Version OCPP',
+                    ];
+                    $label = $labels[$field] ?? $field;
                     throw new InvalidStateTransitionException(
-                        "Le champ '{$field}' ne peut être modifié qu'en phase de mise en service."
+                        "Le champ « {$label} » ne peut être modifié qu'en phase de mise en service."
                     );
                 }
             }
