@@ -54,9 +54,9 @@ public function index(Request $request)
         $search = $request->input('search');
 
         $query->where(function ($q) use ($search) {
-            $q->where('name', 'like', "%{$search}%")
-              ->orWhere('reference', 'like', "%{$search}%")
-              ->orWhere('serial_number', 'like', "%{$search}%");
+            $q->where('name', 'ilike', "%{$search}%")
+                ->orWhere('reference', 'ilike', "%{$search}%")
+                ->orWhere('serial_number', 'ilike', "%{$search}%");
         });
     }
 
