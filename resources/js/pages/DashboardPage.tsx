@@ -88,8 +88,8 @@ export default function DashboardPage() {
                         </div>
                         <div className="role-list" aria-label="Assigned roles">
                             {user?.roles?.map((role) => (
-                                <Tag className="role-tag" key={role.id}>
-                                    {role.name}
+                                <Tag className="role-tag" key={role}>
+                                    {role}
                                 </Tag>
                             ))}
                         </div>
