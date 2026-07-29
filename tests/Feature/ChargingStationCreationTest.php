@@ -117,4 +117,39 @@ class ChargingStationCreationTest extends TestCase
             ->assertStatus(422)
             ->assertJsonValidationErrors('address');
     }
+    public function test_update_resubmitting_own_reference_and_serial_number_succeeds(): void
+    {
+        $station = ChargingStation::factory()->create([
+            'reference' => 'REF-EXISTING-001',
+            'serial_number' => 'SN-EXISTING-001',
+            'administrative_status' => 'commissioning',
+        ]);
+
+        $this->actingAs($this->admin, 'api')
+            ->patchJson("/api/charging-stations/{$station->id}", [
+                'name' => 'Renamed Station',
+                'reference' => 'REF-EXISTING-001',
+                'serial_number' => 'SN-EXISTING-001',
+            ])
+            ->assertStatus(200)
+            ->assertJsonPath('data.name', 'Renamed Station')
+            ->assertJsonPath('data.reference', 'REF-EXISTING-001')
+            ->assertJsonPath('data.serial_number', 'SN-EXISTING-001');
+    }
+public function test_update_with_no_changes_writes_no_history_row(): void
+    {
+        $station = \App\Models\ChargingStation::factory()->create([
+            'name' => 'Unchanged Station',
+            'administrative_status' => 'commissioning',
+        ]);
+
+        $this->actingAs($this->admin, 'api')
+            ->patchJson("/api/charging-stations/{$station->id}", [
+                'name' => 'Unchanged Station',
+            ])
+            ->assertStatus(200);
+
+        $this->assertSame(0, $station->histories()->count());
+    }
+
 }

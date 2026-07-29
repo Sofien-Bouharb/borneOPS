@@ -47,7 +47,7 @@ public function update(ChargingStation $station, array $data, ?User $performedBy
             foreach ($sensitiveFields as $field) {
                 if (array_key_exists($field, $data) && $data[$field] !== $station->{$field}) {
                     throw new InvalidStateTransitionException(
-                        "The field '{$field}' cannot be changed once a station has left commissioning."
+                        "Le champ '{$field}' ne peut être modifié qu'en phase de mise en service."
                     );
                 }
             }
@@ -95,7 +95,7 @@ public function updateOperationalStatus(
 ): ChargingStation {
     if ($station->trashed()) {
         throw new InvalidStateTransitionException(
-            'A soft-deleted station cannot have its operational_status changed.'
+            'Une borne supprimée ne peut pas changer d\'état opérationnel.'
         );
     }
 
@@ -122,18 +122,18 @@ public function updateOperationalStatus(
 public function assign(ChargingStation $station, ?int $siteId, ?string $reason, ?string $comment, ?User $performedBy): ChargingStation
 {
     if ($station->trashed()) {
-        throw new InvalidStateTransitionException('A soft-deleted station cannot be reassigned.');
+        throw new InvalidStateTransitionException('Une borne supprimée ne peut pas être réaffectée.');
     }
 
     if ($siteId === null && $station->administrative_status !== 'commissioning') {
         throw new InvalidStateTransitionException(
-            'Only a station in commissioning may be unassigned.'
+            'Seule une borne en mise en service peut être désaffectée.'
         );
     }
 
     if ($siteId !== null && $siteId === $station->site_id) {
         throw new InvalidStateTransitionException(
-            'The station is already assigned to this site.'
+            'La borne est déjà affectée à ce site.'
         );
     }
 

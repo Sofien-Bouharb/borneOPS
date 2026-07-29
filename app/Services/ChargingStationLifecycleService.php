@@ -29,7 +29,7 @@ class ChargingStationLifecycleService
     ): ChargingStation {
         if ($station->trashed()) {
             throw new InvalidStateTransitionException(
-                'A soft-deleted station cannot transition administrative_status.'
+                'Une borne supprimée ne peut pas changer de statut administratif.'
             );
         }
 
@@ -37,7 +37,7 @@ class ChargingStationLifecycleService
 
         if (!$this->canTransition($oldStatus, 'decommissioned')) {
             throw new InvalidStateTransitionException(
-                "Cannot decommission a station with administrative_status '{$oldStatus}'."
+                "Impossible de décommissionner une borne dans l'état '{$oldStatus}'."
             );
         }
 
@@ -76,7 +76,7 @@ class ChargingStationLifecycleService
 
     if (!$this->canTransition($oldStatus, 'disabled')) {
         throw new InvalidStateTransitionException(
-            "Cannot disable a station with administrative_status '{$oldStatus}'."
+            "Impossible de désactiver une borne dans l'état '{$oldStatus}'."
         );
     }
 
@@ -115,13 +115,13 @@ public function reactivate(
 
     if (!$this->canTransition($oldStatus, 'active')) {
         throw new InvalidStateTransitionException(
-            "Cannot reactivate a station with administrative_status '{$oldStatus}'."
+            "Impossible de réactiver une borne dans l'état '{$oldStatus}'."
         );
     }
 
     if (empty($station->ocpp_identifier)) {
         throw new InvalidStateTransitionException(
-            'A station cannot become active without a non-null ocpp_identifier.'
+            'Une borne ne peut pas devenir active sans identifiant OCPP.'
         );
     }
 

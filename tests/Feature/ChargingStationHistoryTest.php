@@ -109,4 +109,32 @@ class ChargingStationHistoryTest extends TestCase
             ->assertJsonPath('data.0.performed_by.name', $this->admin->name)
             ->assertJsonPath('data.0.performed_by.email', $this->admin->email);
     }
+    public function test_history_insert_failure_rolls_back_station_update(): void
+    {
+        $station = \App\Models\ChargingStation::factory()->create([
+            'name' => 'Original Name',
+            'administrative_status' => 'commissioning',
+        ]);
+
+        // Build a User model in memory only (never persisted), with a fake ID
+        // that guarantees a FK violation when the history row tries to reference it.
+        $ghostUser = User::factory()->make();
+        $ghostUser->id = 999999;
+
+        try {
+            app(\App\Services\ChargingStationService::class)->update(
+                $station,
+                ['name' => 'Would-Be Renamed'],
+                $ghostUser,
+            );
+            $this->fail('Expected an exception due to invalid performed_by FK, but none was thrown.');
+        } catch (\Throwable $e) {
+            // Expected — the history insert violates the FK, the transaction rolls back.
+        }
+
+        // The station should be unchanged in the database, and no history row created.
+        $station->refresh();
+        $this->assertSame('Original Name', $station->name);
+        $this->assertSame(0, $station->histories()->count());
+    }
 }

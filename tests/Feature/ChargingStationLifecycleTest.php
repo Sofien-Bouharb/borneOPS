@@ -229,9 +229,9 @@ class ChargingStationLifecycleTest extends TestCase
             ->patchJson("/api/charging-stations/{$station->id}", [
                 'reference' => 'HACKED-REF',
             ])
-            ->assertStatus(409);
+            ->assertStatus(422)
+            ->assertJsonValidationErrors('reference');
     }
-
     public function test_reactivate_does_not_touch_operational_status(): void
     {
         $station = ChargingStation::factory()->create([

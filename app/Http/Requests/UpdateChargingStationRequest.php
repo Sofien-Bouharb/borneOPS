@@ -19,7 +19,7 @@ class UpdateChargingStationRequest extends FormRequest
     public function rules(): array
     {
         /** @var ChargingStation|null $station */
-        $station = $this->route('charging_station');
+        $station = $this->route('station');
 
         return [
             'name' => ['sometimes', 'required', 'string', 'max:255'],
@@ -54,7 +54,7 @@ class UpdateChargingStationRequest extends FormRequest
 {
     $validator->after(function (ValidatorContract $validator) {
         /** @var ChargingStation|null $station */
-        $station = $this->route('charging_station');
+        $station = $this->route('station');
 
         if (!$station || $station->administrative_status === 'commissioning') {
             return;

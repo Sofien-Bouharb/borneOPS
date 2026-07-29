@@ -1,5 +1,5 @@
 import { Navigate, Route, Routes } from 'react-router-dom';
-import { AuthProvider, useAuth } from './auth/AuthContext';
+import { AuthProvider, useAuth, usePermission } from './auth/AuthContext';
 import LoginPage from './pages/LoginPage';
 import ForgotPasswordPage from './pages/ForgotPasswordPage';
 import ResetPasswordPage from './pages/ResetPasswordPage';
@@ -10,8 +10,9 @@ import StationDetailPage from './pages/StationDetailPage';
 import StationEditPage from './pages/StationEditPage';
 import { LoadingOutlined } from '@ant-design/icons';
 
-function ProtectedRoute({ children }: { children: React.ReactNode }) {
+function ProtectedRoute({ children, permission }: { children: React.ReactNode; permission?: string }) {
   const { user, loading } = useAuth();
+  const hasPermission = usePermission(permission ?? '');
 
   if (loading) {
     return (
@@ -26,6 +27,10 @@ function ProtectedRoute({ children }: { children: React.ReactNode }) {
 
   if (!user) {
     return <Navigate to="/login" replace />;
+  }
+
+  if (permission && !hasPermission) {
+    return <Navigate to="/stations" replace />;
   }
 
   return <>{children}</>;
@@ -44,10 +49,10 @@ function AppRoutes() {
         }
       />
       {/* Module 2: Charging Stations */}
-      <Route path="/stations" element={<ProtectedRoute><StationListPage /></ProtectedRoute>} />
-      <Route path="/stations/new" element={<ProtectedRoute><StationCreatePage /></ProtectedRoute>} />
-      <Route path="/stations/:id" element={<ProtectedRoute><StationDetailPage /></ProtectedRoute>} />
-      <Route path="/stations/:id/edit" element={<ProtectedRoute><StationEditPage /></ProtectedRoute>} />
+        <Route path="/stations" element={<ProtectedRoute permission="charging_stations.view"><StationListPage /></ProtectedRoute>} />
+        <Route path="/stations/new" element={<ProtectedRoute permission="charging_stations.create"><StationCreatePage /></ProtectedRoute>} />
+        <Route path="/stations/:id" element={<ProtectedRoute permission="charging_stations.view"><StationDetailPage /></ProtectedRoute>} />
+        <Route path="/stations/:id/edit" element={<ProtectedRoute permission="charging_stations.update"><StationEditPage /></ProtectedRoute>} />
 
       <Route path="/forgot-password" element={<ForgotPasswordPage />} />
       <Route path="/reset-password" element={<ResetPasswordPage />} />

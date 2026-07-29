@@ -114,9 +114,15 @@ protected function respondWithSession(array $result)
     ));
 }
 
-    public function me()
+public function me()
     {
-        return response()->json(auth('api')->user());
+        $user = auth('api')->user();
+
+        return response()->json([
+            ...$user->toArray(),
+            'roles' => $user->getRoleNames(),
+            'permissions' => $user->getAllPermissions()->pluck('name'),
+        ]);
     }
 
     public function refresh(Request $request)

@@ -3,6 +3,8 @@ import { Form, Input, InputNumber, Select, Button, Card, Typography, message, Ro
 import { ArrowLeftOutlined } from '@ant-design/icons';
 import { useCreateStation, useSites } from '../api/stations';
 import '../../css/stations.css';
+import { extractErrorMessage, translateBackendMessage } from '../utils/apiErrors';
+
 
 const { Title } = Typography;
 
@@ -20,15 +22,15 @@ export default function StationCreatePage() {
       message.success('Borne créée avec succès');
       navigate(`/stations/${station.id}`);
     } catch (err: unknown) {
-      const error = err as { response?: { data?: { message?: string; errors?: Record<string, string[]> } } };
+      const error = err as { response?: { data?: { errors?: Record<string, string[]> } } };
       if (error.response?.data?.errors) {
         const fields = Object.entries(error.response.data.errors).map(([name, errs]) => ({
           name,
-          errors: errs,
+          errors: errs.map((msg) => translateBackendMessage(msg)),
         }));
         form.setFields(fields);
       } else {
-        message.error(error.response?.data?.message ?? 'Erreur lors de la création');
+        message.error(extractErrorMessage(err));
       }
     }
   };

@@ -27,8 +27,7 @@ public function __construct(
 
 public function index(Request $request)
 {
-    $query = ChargingStation::query();
-
+    $query = ChargingStation::query()->with('site.organization');
     if ($request->filled('administrative_status')) {
         $query->where('administrative_status', $request->input('administrative_status'));
     }
@@ -61,7 +60,8 @@ public function index(Request $request)
         });
     }
 
-    $stations = $query->paginate(15);
+        $perPage = max(1, min((int) $request->input('per_page', 15), 100));
+        $stations = $query->paginate($perPage);
 
     return new ChargingStationCollection($stations);
 }
@@ -78,11 +78,11 @@ public function index(Request $request)
             ->setStatusCode(201);
     }
 
-    public function show(ChargingStation $station)
-    {
-        return new ChargingStationResource($station);
-    }
-
+  public function show(ChargingStation $station)
+{
+    $station->load('site.organization');
+    return new ChargingStationResource($station);
+}
     public function update(UpdateChargingStationRequest $request, ChargingStation $station)
     {
         $station = $this->chargingStationService->update(

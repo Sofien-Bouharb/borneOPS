@@ -4,6 +4,8 @@ import { Form, Input, InputNumber, Button, Card, Typography, Spin, Alert, Space,
 import { ArrowLeftOutlined } from '@ant-design/icons';
 import { useStation, useUpdateStation } from '../api/stations';
 import '../../css/stations.css';
+import { extractErrorMessage, translateBackendMessage } from '../utils/apiErrors';
+
 
 const { Title } = Typography;
 
@@ -46,15 +48,15 @@ export default function StationEditPage() {
       message.success('Borne mise à jour');
       navigate(`/stations/${stationId}`);
     } catch (err: unknown) {
-      const error = err as { response?: { data?: { message?: string; errors?: Record<string, string[]> } } };
+      const error = err as { response?: { data?: { errors?: Record<string, string[]> } } };
       if (error.response?.data?.errors) {
         const fields = Object.entries(error.response.data.errors).map(([name, errs]) => ({
           name,
-          errors: errs,
+          errors: errs.map((msg) => translateBackendMessage(msg)),
         }));
         form.setFields(fields);
       } else {
-        message.error(error.response?.data?.message ?? 'Erreur lors de la mise à jour');
+        message.error(extractErrorMessage(err));
       }
     }
   };

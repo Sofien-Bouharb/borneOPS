@@ -2,17 +2,12 @@
 import { createContext, useContext, useEffect, useState, ReactNode } from 'react';
 import api, { setAccessToken } from '../api/client';
 
-interface Role {
-    id: number;
-    name: string;
-    guard_name: string;
-}
-
 interface User {
-    id: number;
-    name: string;
-    email: string;
-    roles?: Role[];
+  id: number;
+  name: string;
+  email: string;
+  roles?: string[];
+  permissions?: string[];
 }
 
 interface LoginResult {
@@ -106,4 +101,8 @@ export function useAuth() {
         throw new Error('useAuth must be used within an AuthProvider');
     }
     return context;
+}
+export function usePermission(permission: string): boolean {
+  const { user } = useAuth();
+  return user?.permissions?.includes(permission) ?? false;
 }

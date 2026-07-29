@@ -4,6 +4,9 @@ import { Table, Tag, Input, Select, Button, Space, Card, Row, Col, Typography } 
 import { PlusOutlined, ReloadOutlined, SearchOutlined } from '@ant-design/icons';
 import { useStations, useOrganizations, useSites, type StationFilters, type ChargingStation } from '../api/stations';
 import '../../css/stations.css';
+import { usePermission } from '../auth/AuthContext';
+import { ADMIN_STATUS_LABELS, OP_STATUS_LABELS } from '../utils/stationLabels';
+import { useDebouncedValue } from '../utils/useDebouncedValue';
 
 const { Title } = Typography;
 
@@ -26,10 +29,14 @@ const OP_STATUS_COLORS: Record<string, string> = {
 export default function StationListPage() {
   const navigate = useNavigate();
   const [filters, setFilters] = useState<StationFilters>({ page: 1 });
-  const { data, isLoading, refetch } = useStations(filters);
+  const [searchInput, setSearchInput] = useState('');
+  const debouncedSearch = useDebouncedValue(searchInput, 300);
+  const { data, isLoading, refetch } = useStations({ ...filters, search: debouncedSearch || undefined });
   const { data: organizations } = useOrganizations();
   const { data: sites } = useSites();
-
+  const canCreate = usePermission('charging_stations.create');
+  const canViewOrgs = usePermission('organizations.view');
+  const canViewSites = usePermission('sites.view');
   const updateFilter = (key: keyof StationFilters, value: unknown) => {
     setFilters((prev) => ({ ...prev, [key]: value || undefined, page: 1 }));
   };
@@ -54,6 +61,18 @@ export default function StationListPage() {
       key: 'manufacturer',
     },
     {
+      title: 'Site',
+      key: 'site',
+      render: (_: unknown, record: ChargingStation) =>
+        record.site?.name ?? <span style={{ color: '#999' }}>—</span>,
+    },
+    {
+      title: 'Organisation',
+      key: 'organization',
+      render: (_: unknown, record: ChargingStation) =>
+        record.site?.organization?.name ?? <span style={{ color: '#999' }}>—</span>,
+    },
+    {
       title: 'Puissance',
       dataIndex: 'power_kw',
       key: 'power_kw',
@@ -65,7 +84,7 @@ export default function StationListPage() {
       key: 'administrative_status',
       render: (status: string) => (
         <Tag className="station-status-tag" color={ADMIN_STATUS_COLORS[status] ?? 'default'}>
-          {status}
+          {ADMIN_STATUS_LABELS[status] ?? status}
         </Tag>
       ),
     },
@@ -75,7 +94,7 @@ export default function StationListPage() {
       key: 'operational_status',
       render: (status: string) => (
         <Tag className="station-status-tag" color={OP_STATUS_COLORS[status] ?? 'default'}>
-          {status}
+          {OP_STATUS_LABELS[status] ?? status}
         </Tag>
       ),
     },
@@ -92,9 +111,11 @@ export default function StationListPage() {
             <Button icon={<ReloadOutlined />} onClick={() => refetch()}>
               Actualiser
             </Button>
-            <Button type="primary" icon={<PlusOutlined />} onClick={() => navigate('/stations/new')}>
-              Nouvelle borne
-            </Button>
+            {canCreate && (
+              <Button type="primary" icon={<PlusOutlined />} onClick={() => navigate('/stations/new')}>
+                Nouvelle borne
+              </Button>
+            )}
           </Space>
         </Col>
       </Row>
@@ -107,7 +128,8 @@ export default function StationListPage() {
               placeholder="Rechercher..."
               prefix={<SearchOutlined />}
               allowClear
-              onChange={(e) => updateFilter('search', e.target.value)}
+              value={searchInput}
+              onChange={(e) => setSearchInput(e.target.value)}
             />
           </Col>
           <Col xs={24} sm={12} md={5}>
@@ -116,12 +138,7 @@ export default function StationListPage() {
               placeholder="Statut admin."
               allowClear
               onChange={(v) => updateFilter('administrative_status', v)}
-              options={[
-                { value: 'commissioning', label: 'Commissioning' },
-                { value: 'active', label: 'Active' },
-                { value: 'disabled', label: 'Disabled' },
-                { value: 'decommissioned', label: 'Decommissioned' },
-              ]}
+              options={Object.entries(ADMIN_STATUS_LABELS).map(([value, label]) => ({ value, label }))}
             />
           </Col>
           <Col xs={24} sm={12} md={5}>
@@ -130,34 +147,49 @@ export default function StationListPage() {
               placeholder="État opérationnel"
               allowClear
               onChange={(v) => updateFilter('operational_status', v)}
-              options={[
-                { value: 'available', label: 'Available' },
-                { value: 'occupied', label: 'Occupied' },
-                { value: 'out_of_service', label: 'Out of service' },
-                { value: 'maintenance', label: 'Maintenance' },
-                { value: 'disconnected', label: 'Disconnected' },
-                { value: 'fault', label: 'Fault' },
-              ]}
+              options={Object.entries(OP_STATUS_LABELS).map(([value, label]) => ({ value, label }))}
             />
           </Col>
+          {canViewOrgs && (
           <Col xs={24} sm={12} md={4}>
             <Select
               className="station-filter-control"
               placeholder="Organisation"
               allowClear
-              onChange={(v) => updateFilter('organization_id', v)}
-              options={organizations?.map((o) => ({ value: o.id, label: o.name })) ?? []}
+              value={filters.organization_id}
+              onChange={(v) => {
+                setFilters((prev) => {
+                  const next = { ...prev, organization_id: v || undefined, page: 1 };
+                  // If a site was selected but no longer belongs to the new org, clear it
+                  if (next.organization_id && next.site_id) {
+                    const site = sites?.find((s) => s.id === next.site_id);
+                    if (!site || site.organization_id !== next.organization_id) {
+                      next.site_id = undefined;
+                    }
+                  }
+                  return next;
+                });
+              }}
+        options={organizations?.map((o) => ({ value: o.id, label: o.name })) ?? []}
             />
           </Col>
+          )}
+          {canViewSites && (
           <Col xs={24} sm={12} md={4}>
             <Select
               className="station-filter-control"
               placeholder="Site"
               allowClear
+              value={filters.site_id}
               onChange={(v) => updateFilter('site_id', v)}
-              options={sites?.map((s) => ({ value: s.id, label: s.name })) ?? []}
+              options={
+                sites
+                  ?.filter((s) => !filters.organization_id || s.organization_id === filters.organization_id)
+                  .map((s) => ({ value: s.id, label: s.name })) ?? []
+              }
             />
           </Col>
+          )}
         </Row>
       </Card>
 
@@ -173,9 +205,10 @@ export default function StationListPage() {
             current: data?.meta.current_page ?? 1,
             pageSize: data?.meta.per_page ?? 15,
             total: data?.meta.total ?? 0,
-            onChange: (page) => setFilters((prev) => ({ ...prev, page })),
+            onChange: (page, pageSize) => setFilters((prev) => ({ ...prev, page, per_page: pageSize })),
             showTotal: (total) => `${total} borne(s)`,
-            showSizeChanger: false,
+            showSizeChanger: true,
+            pageSizeOptions: [15, 30, 50, 100],
           }}
           onRow={(record) => ({
             onClick: () => navigate(`/stations/${record.id}`),

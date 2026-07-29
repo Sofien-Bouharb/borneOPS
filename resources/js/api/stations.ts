@@ -31,6 +31,9 @@ export interface Site {
   name: string;
   address: string;
   organization_id: number;
+  latitude?: string | null;
+  longitude?: string | null;
+  organization?: Organization;
 }
 
 export interface Organization {
@@ -70,6 +73,7 @@ export interface PaginatedResponse<T> {
 
 export interface StationFilters {
   page?: number;
+  per_page?: number;
   administrative_status?: string;
   operational_status?: string;
   manufacturer?: string;
