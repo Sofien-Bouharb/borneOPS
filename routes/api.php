@@ -8,6 +8,7 @@ use App\Http\Controllers\OrganizationController;
 use App\Http\Controllers\SiteController;
 use App\Http\Controllers\ChargingStationController;
 
+
 Route::post('/login', [AuthController::class, 'login'])
     ->middleware('throttle:login');
 
