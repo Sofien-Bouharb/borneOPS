@@ -16,6 +16,7 @@ use App\Http\Requests\DecommissionChargingStationRequest;
 use App\Http\Requests\UpdateChargingStationStateRequest;
 use App\Http\Requests\AssignChargingStationRequest;
 use App\Http\Resources\ChargingStationHistoryResource;
+use Illuminate\Support\Facades\DB;
 
 
 class ChargingStationController extends Controller
@@ -52,11 +53,12 @@ public function index(Request $request)
 
     if ($request->filled('search')) {
         $search = $request->input('search');
+        $likeOperator = DB::connection()->getDriverName() === 'pgsql' ? 'ILIKE' : 'LIKE';
 
-        $query->where(function ($q) use ($search) {
-            $q->where('name', 'ilike', "%{$search}%")
-                ->orWhere('reference', 'ilike', "%{$search}%")
-                ->orWhere('serial_number', 'ilike', "%{$search}%");
+        $query->where(function ($q) use ($search, $likeOperator) {
+            $q->where('name', $likeOperator, "%{$search}%")
+                ->orWhere('reference',$likeOperator, "%{$search}%")
+                ->orWhere('serial_number', $likeOperator, "%{$search}%");
         });
     }
 
