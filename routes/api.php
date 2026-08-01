@@ -7,6 +7,7 @@ use App\Http\Controllers\SessionController;
 use App\Http\Controllers\OrganizationController;
 use App\Http\Controllers\SiteController;
 use App\Http\Controllers\ChargingStationController;
+use App\Http\Controllers\ConnectorController;
 
 
 Route::post('/login', [AuthController::class, 'login'])
@@ -75,4 +76,20 @@ Route::middleware('auth:api')->group(function () {
         ->middleware('permission:charging_stations.assign');
     Route::get('/charging-stations/{station}/history', [ChargingStationController::class, 'history'])
         ->middleware('permission:charging_stations.history.view');
+
+        // --- Module 3: Connectors ---
+    Route::get('/charging-stations/{station}/connectors', [ConnectorController::class, 'index'])
+        ->middleware('permission:connectors.view');
+    Route::post('/charging-stations/{station}/connectors', [ConnectorController::class, 'store'])
+        ->middleware('permission:connectors.create');
+    Route::get('/charging-stations/{station}/connectors/{connector}', [ConnectorController::class, 'show'])
+        ->middleware('permission:connectors.view');
+    Route::patch('/charging-stations/{station}/connectors/{connector}', [ConnectorController::class, 'update'])
+        ->middleware('permission:connectors.update');
+    Route::delete('/charging-stations/{station}/connectors/{connector}', [ConnectorController::class, 'destroy'])
+        ->middleware('permission:connectors.delete');
+    Route::patch('/charging-stations/{station}/connectors/{connector}/state', [ConnectorController::class, 'updateState'])
+        ->middleware('permission:connectors.state.update');
+    Route::patch('/charging-stations/{station}/connectors/{connector}/availability', [ConnectorController::class, 'updateAvailability'])
+        ->middleware('permission:connectors.availability.update');
 });
