@@ -34,6 +34,12 @@ class ChargingStationResource extends JsonResource
             'site_id' => $this->site_id,
             'site' => new SiteResource($this->whenLoaded('site')),
             'histories' => ChargingStationHistoryResource::collection($this->whenLoaded('histories')),
+            'actual_connector_count' => $this->whenCounted('connectors'),
+            'connector_count_matches' => $this->when(
+                isset($this->connectors_count),
+                fn () => $this->connectors_count === $this->declared_connector_count
+            ),
+            'connectors' => ConnectorResource::collection($this->whenLoaded('connectors')),
             'created_at' => $this->created_at,
             'updated_at' => $this->updated_at,
         ];
