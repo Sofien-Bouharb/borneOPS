@@ -13,6 +13,7 @@ import '../../css/stations.css';
 import { formatChangeSet, EVENT_TYPE_LABELS, OP_STATUS_LABELS, ADMIN_STATUS_LABELS } from '../utils/stationLabels';
 import { extractErrorMessage } from '../utils/apiErrors';
 import { usePermission } from '../auth/AuthContext';
+import ConnectorsPanel from '../components/ConnectorsPanel';
 
 const { Title, Text } = Typography;
 
@@ -184,6 +185,16 @@ export default function StationDetailPage() {
         />
       )}
 
+      {station.connector_count_matches === false && (
+        <Alert
+          className="station-form-alert"
+          type="warning"
+          message="Écart de connecteurs"
+          description={`Le nombre déclaré de connecteurs (${station.declared_connector_count}) ne correspond pas au nombre réel de connecteurs configurés (${station.actual_connector_count ?? '—'}).`}
+          showIcon
+        />
+      )}
+
       <Card className="station-info-card">
         <Descriptions className="station-descriptions" column={{ xs: 1, sm: 2 }} bordered size="small">
           <Descriptions.Item label="Référence">{station.reference}</Descriptions.Item>
@@ -194,7 +205,8 @@ export default function StationDetailPage() {
           <Descriptions.Item label="Identifiant OCPP">{station.ocpp_identifier ?? '—'}</Descriptions.Item>
           <Descriptions.Item label="Firmware">{station.firmware_version ?? '—'}</Descriptions.Item>
           <Descriptions.Item label="Puissance">{station.power_kw} kW</Descriptions.Item>
-          <Descriptions.Item label="Connecteurs">{station.declared_connector_count}</Descriptions.Item>
+          <Descriptions.Item label="Connecteurs déclarés">{station.declared_connector_count}</Descriptions.Item>
+          <Descriptions.Item label="Connecteurs réels">{station.actual_connector_count ?? '—'}</Descriptions.Item>
           <Descriptions.Item label="Site">{station.site?.name ?? '— Non affectée'}</Descriptions.Item>
           <Descriptions.Item label="Organisation">{station.site?.organization?.name ?? '—'}</Descriptions.Item>
           <Descriptions.Item label="Coordonnées borne">{station.latitude}, {station.longitude}</Descriptions.Item>
@@ -210,6 +222,12 @@ export default function StationDetailPage() {
           <Descriptions.Item label="Mise à jour">{new Date(station.updated_at).toLocaleString('fr-TN')}</Descriptions.Item>
         </Descriptions>
       </Card>
+
+      <ConnectorsPanel
+        stationId={stationId}
+        stationAdministrativeStatus={station.administrative_status}
+        stationPowerKw={station.power_kw}
+      />
 
       <section className="station-history-section">
         <Divider className="station-section-divider" orientation={'left' as any}>Historique</Divider>

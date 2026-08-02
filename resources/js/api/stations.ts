@@ -24,6 +24,8 @@ export interface ChargingStation {
   created_at: string;
   updated_at: string;
   site?: Site;
+  actual_connector_count?: number;
+  connector_count_matches?: boolean;
 }
 
 export interface Site {
