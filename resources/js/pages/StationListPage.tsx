@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Table, Tag, Input, Select, Button, Space, Card, Row, Col, Typography } from 'antd';
-import { PlusOutlined, ReloadOutlined, SearchOutlined } from '@ant-design/icons';
+import { Table, Tag, Input, Select, Button, Space, Card, Row, Col, Typography, Tooltip } from 'antd';
+import { PlusOutlined, ReloadOutlined, SearchOutlined, WarningOutlined } from '@ant-design/icons';
 import { useStations, useOrganizations, useSites, type StationFilters, type ChargingStation } from '../api/stations';
 import '../../css/stations.css';
 import { usePermission } from '../auth/AuthContext';
@@ -77,6 +77,25 @@ export default function StationListPage() {
       dataIndex: 'power_kw',
       key: 'power_kw',
       render: (val: string) => `${val} kW`,
+    },
+    {
+      title: 'Connecteurs',
+      key: 'connectors',
+      render: (_: unknown, record: ChargingStation) => {
+        const actual = record.actual_connector_count ?? 0;
+        const declared = record.declared_connector_count;
+        const mismatch = record.connector_count_matches === false;
+        return (
+          <Space size={4}>
+            <span>{actual}/{declared}</span>
+            {mismatch && (
+              <Tooltip title="Le nombre réel de connecteurs ne correspond pas au nombre déclaré">
+                <WarningOutlined style={{ color: '#faad14' }} />
+              </Tooltip>
+            )}
+          </Space>
+        );
+      },
     },
     {
       title: 'Statut admin.',
@@ -200,7 +219,7 @@ export default function StationListPage() {
           columns={columns}
           dataSource={data?.data ?? []}
           loading={isLoading}
-          scroll={{ x: 920 }}
+          scroll={{ x: 1020 }}
           pagination={{
             current: data?.meta.current_page ?? 1,
             pageSize: data?.meta.per_page ?? 15,

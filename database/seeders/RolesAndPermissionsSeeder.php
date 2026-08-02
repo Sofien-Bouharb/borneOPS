@@ -56,6 +56,14 @@ class RolesAndPermissionsSeeder extends Seeder
             'sites.view',
             'sites.create',
             'sites.update',
+
+            // Module 3 — Connector Management
+            'connectors.view',
+            'connectors.create',
+            'connectors.update',
+            'connectors.delete',
+            'connectors.state.update',
+            'connectors.availability.update',
         ];
 
         foreach ($permissions as $permissionName) {
@@ -69,6 +77,8 @@ class RolesAndPermissionsSeeder extends Seeder
                 'charging_stations.decommission', 'charging_stations.assign', 'charging_stations.history.view',
                 'organizations.view', 'organizations.create', 'organizations.update',
                 'sites.view', 'sites.create', 'sites.update',
+                'connectors.view', 'connectors.create', 'connectors.update', 'connectors.delete',
+                'connectors.state.update', 'connectors.availability.update',
             ],
             'Exploitant' => [
                 'charging_stations.view', 'charging_stations.create', 'charging_stations.update',
@@ -76,24 +86,34 @@ class RolesAndPermissionsSeeder extends Seeder
                 'charging_stations.decommission', 'charging_stations.assign', 'charging_stations.history.view',
                 'organizations.view', 'organizations.create', 'organizations.update',
                 'sites.view', 'sites.create', 'sites.update',
+                'connectors.view', 'connectors.create', 'connectors.update', 'connectors.delete',
+                'connectors.state.update', 'connectors.availability.update',
             ],
             'Opérateur' => [
                 'charging_stations.view',
                 'charging_stations.state.update',
                 'charging_stations.history.view',
+                'connectors.view',
+                'connectors.state.update',
             ],
             'Technicien' => [
-                // state.update deliberately withheld — roadmap marks it "possibly, scoped"
+                // charging_stations.state.update deliberately withheld — roadmap marks it "possibly, scoped"
                 // and no assigned-technician relationship exists yet to scope it against.
+                // connectors.state.update IS granted here per the Module 3 permission matrix (§18) —
+                // it's a separate, more granular permission than the station-level one above.
                 'charging_stations.view',
                 'charging_stations.history.view',
+                'connectors.view',
+                'connectors.state.update',
             ],
             'Service Client' => [
                 'charging_stations.view',
                 'charging_stations.history.view',
+                'connectors.view',
             ],
             'Finance' => [
                 'charging_stations.view',
+                'connectors.view',
             ],
             'Client' => [
                 // No access — deferred until organization_user scoping exists (Module 6).

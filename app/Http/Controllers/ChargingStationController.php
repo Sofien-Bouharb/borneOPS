@@ -28,7 +28,7 @@ public function __construct(
 
 public function index(Request $request)
 {
-    $query = ChargingStation::query()->with('site.organization');
+    $query = ChargingStation::query()->with('site.organization')->withCount('connectors');
     if ($request->filled('administrative_status')) {
         $query->where('administrative_status', $request->input('administrative_status'));
     }
@@ -82,7 +82,7 @@ public function index(Request $request)
 
   public function show(ChargingStation $station)
 {
-    $station->load('site.organization');
+    $station->load('site.organization', 'connectors')->loadCount('connectors');
     return new ChargingStationResource($station);
 }
     public function update(UpdateChargingStationRequest $request, ChargingStation $station)

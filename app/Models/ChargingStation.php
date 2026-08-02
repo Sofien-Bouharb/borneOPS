@@ -46,4 +46,9 @@ class ChargingStation extends Model
     {
         return $this->hasMany(ChargingStationHistory::class);
     }
+
+    public function connectors(): HasMany
+    {
+        return $this->hasMany(Connector::class);
+    }
 }
