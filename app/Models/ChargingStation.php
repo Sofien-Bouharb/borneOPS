@@ -35,6 +35,9 @@ class ChargingStation extends Model
         'latitude' => 'decimal:7',
         'longitude' => 'decimal:7',
         'power_kw' => 'decimal:2',
+        'last_heartbeat_at' => 'datetime',
+        'last_seen_at' => 'datetime',
+        'disconnected_at' => 'datetime',
     ];
 
     public function site(): BelongsTo
