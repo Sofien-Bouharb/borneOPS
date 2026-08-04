@@ -1,6 +1,7 @@
 <?php
 
 use Illuminate\Support\Facades\Route;
+use Illuminate\Support\Facades\Broadcast;
 use App\Http\Controllers\AuthController;
 use App\Http\Controllers\PasswordResetController;
 use App\Http\Controllers\SessionController;
@@ -35,6 +36,9 @@ Route::middleware('auth:api')->group(function () {
     Route::post('/logout-all', [AuthController::class, 'logoutAll']);
     Route::get('/sessions', [SessionController::class, 'index']);
     Route::delete('/sessions/{sessionId}', [SessionController::class, 'destroy']);
+
+    // --- Broadcasting authorization (private/presence channels) ---
+    Broadcast::routes(['middleware' => ['auth:api']]);
 
     // --- Module 2: Organizations ---
     Route::get('/organizations', [OrganizationController::class, 'index'])

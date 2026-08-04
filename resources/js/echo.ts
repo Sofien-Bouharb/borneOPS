@@ -19,7 +19,7 @@ const echo = new Echo({
     wssPort: import.meta.env.VITE_REVERB_PORT,
     forceTLS: (import.meta.env.VITE_REVERB_SCHEME ?? 'http') === 'https',
     enabledTransports: ['ws', 'wss'],
-    authEndpoint: '/broadcasting/auth',
+    authEndpoint: '/api/broadcasting/auth',
     auth: {
         headers: {
             get Authorization() {
