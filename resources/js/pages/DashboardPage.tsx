@@ -1,10 +1,24 @@
 // resources/js/pages/DashboardPage.tsx
+import { useEffect } from 'react';
 import { DeploymentUnitOutlined, RadarChartOutlined, SafetyCertificateOutlined } from '@ant-design/icons';
 import { Card, Typography } from 'antd';
+import echo from '../echo';
 
 const { Text } = Typography;
 
 export default function DashboardPage() {
+    useEffect(() => {
+        const channel = echo.private('supervision').listen('.station.updated', (e: unknown) => {
+            console.log('Received event:', e);
+        });
+
+        console.log('Subscribed to private-supervision channel.');
+
+        return () => {
+            echo.leave('supervision');
+        };
+    }, []);
+
     return (
         <div className="ops-shell">
             <header className="ops-header">

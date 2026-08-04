@@ -40,7 +40,7 @@ class StationMonitoringService
             $station->save();
         });
 
-        broadcast(new StationMonitoringUpdated($station));
+        $this->broadcastStation($station);
 
         return $station;
     }
@@ -85,7 +85,7 @@ class StationMonitoringService
             $station->save();
         });
 
-        broadcast(new StationMonitoringUpdated($station));
+        $this->broadcastStation($station);
 
         return $station;
     }
@@ -117,7 +117,7 @@ class StationMonitoringService
             $source
         );
 
-        broadcast(new StationMonitoringUpdated($station));
+        $this->broadcastStation($station);
 
         return $station;
     }
@@ -137,7 +137,7 @@ class StationMonitoringService
 
         $station = ChargingStation::find($connector->charging_station_id);
 
-        broadcast(new StationMonitoringUpdated($station));
+        $this->broadcastStation($station);
 
         return $connector;
     }
@@ -170,5 +170,24 @@ class StationMonitoringService
         }
 
         return $staleStations->count();
+    }
+
+    /**
+     * Reload the given station fresh with its connector count and broadcast
+     * it. This is the single point through which every monitoring broadcast
+     * passes, guaranteeing the WebSocket event always carries the exact same
+     * SupervisionStationResource shape as the REST dashboard snapshot —
+     * including actual_connector_count and connector_count_matches, which
+     * require withCount('connectors') to be present.
+     */
+    protected function broadcastStation(ChargingStation $station): void
+    {
+        $freshStation = ChargingStation::withCount('connectors')->find($station->id);
+
+        if ($freshStation === null) {
+            return;
+        }
+
+        broadcast(new StationMonitoringUpdated($freshStation));
     }
 }
