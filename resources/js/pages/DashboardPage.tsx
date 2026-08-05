@@ -62,9 +62,11 @@ export default function DashboardPage() {
     const refetchTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
     useEffect(() => {
-        const channel = echo.private('supervision').listen(
+        echo.private('supervision').listen(
             '.station.updated',
             (e: { station: SupervisionStation }) => {
+                console.log('Received event:', e);
+
                 queryClient.setQueryData<SupervisionDashboard | undefined>(
                     ['supervision-dashboard'],
                     (current) => {
@@ -88,6 +90,8 @@ export default function DashboardPage() {
                 }, 500);
             },
         );
+
+        console.log('Subscribed to private-supervision channel.');
 
         return () => {
             if (refetchTimeoutRef.current) {
