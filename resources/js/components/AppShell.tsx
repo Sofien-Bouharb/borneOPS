@@ -96,6 +96,7 @@ export default function AppShell({ children }: { children: ReactNode }) {
 
     const navigationMenu = (
         <Menu
+            className="ops-app-menu"
             mode="inline"
             selectedKeys={[selectedKey]}
             items={menuItems}
@@ -107,7 +108,7 @@ export default function AppShell({ children }: { children: ReactNode }) {
     return (
         <Layout style={{ minHeight: '100vh' }}>
             {!isMobile && (
-                <Sider width={240} theme="light" style={{ borderInlineEnd: '1px solid #D7E0E7' }}>
+                <Sider className="ops-app-sider" width={240} theme="dark">
                     <div style={{ padding: '20px 16px' }}>{brand}</div>
                     {navigationMenu}
                 </Sider>
@@ -127,12 +128,8 @@ export default function AppShell({ children }: { children: ReactNode }) {
 
             <Layout>
                 <Header
+                    className="ops-app-header"
                     style={{
-                        background: '#fff',
-                        borderBottom: '1px solid #D7E0E7',
-                        display: 'flex',
-                        alignItems: 'center',
-                        justifyContent: 'space-between',
                         padding: '0 20px',
                     }}
                 >
@@ -147,7 +144,7 @@ export default function AppShell({ children }: { children: ReactNode }) {
                         )}
                         {isMobile && brand}
                         {!isMobile && (
-                            <div style={{ display: 'flex', alignItems: 'center', gap: 8, color: '#12629C' }}>
+                            <div className="ops-header__trust">
                                 <SafetyCertificateOutlined aria-hidden="true" />
                                 <Text type="secondary">Authorized operator workspace</Text>
                             </div>
@@ -163,7 +160,7 @@ export default function AppShell({ children }: { children: ReactNode }) {
                     </Dropdown>
                 </Header>
 
-                <Content style={{ background: '#F3F6F8' }}>{children}</Content>
+                <Content className="ops-app-content">{children}</Content>
             </Layout>
         </Layout>
     );

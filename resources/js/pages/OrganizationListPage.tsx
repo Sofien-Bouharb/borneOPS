@@ -5,6 +5,7 @@ import { PlusOutlined, ReloadOutlined, SearchOutlined } from '@ant-design/icons'
 import { useOrganizationsList, type Organization } from '../api/organizations';
 import { usePermission } from '../auth/AuthContext';
 import { useDebouncedValue } from '../utils/useDebouncedValue';
+import AppShell from '../components/AppShell';
 
 const { Title } = Typography;
 
@@ -48,49 +49,51 @@ export default function OrganizationListPage() {
   ];
 
   return (
-    <main className="station-page station-page--list">
-      <Row className="station-page-header" justify="space-between" align="middle" gutter={[20, 16]}>
-        <Col>
-          <Title className="station-page-title" level={3}>Organisations</Title>
-        </Col>
-        <Col>
-          <Space className="station-page-actions" wrap>
-            <Button icon={<ReloadOutlined />} onClick={() => refetch()}>Actualiser</Button>
-            {canCreate && (
-              <Button type="primary" icon={<PlusOutlined />} onClick={() => navigate('/organizations/new')}>
-                Nouvelle organisation
-              </Button>
-            )}
-          </Space>
-        </Col>
-      </Row>
+    <AppShell>
+      <main className="station-page station-page--list">
+        <Row className="station-page-header" justify="space-between" align="middle" gutter={[20, 16]}>
+          <Col>
+            <Title className="station-page-title" level={3}>Organisations</Title>
+          </Col>
+          <Col>
+            <Space className="station-page-actions" wrap>
+              <Button icon={<ReloadOutlined />} onClick={() => refetch()}>Actualiser</Button>
+              {canCreate && (
+                <Button type="primary" icon={<PlusOutlined />} onClick={() => navigate('/organizations/new')}>
+                  Nouvelle organisation
+                </Button>
+              )}
+            </Space>
+          </Col>
+        </Row>
 
-      <Card className="station-filter-card" size="small">
-        <Input
-          className="station-filter-control"
-          placeholder="Rechercher par nom ou email..."
-          prefix={<SearchOutlined />}
-          allowClear
-          value={searchInput}
-          onChange={(e) => setSearchInput(e.target.value)}
-        />
-      </Card>
+        <Card className="station-filter-card" size="small">
+          <Input
+            className="station-filter-control"
+            placeholder="Rechercher par nom ou email..."
+            prefix={<SearchOutlined />}
+            allowClear
+            value={searchInput}
+            onChange={(e) => setSearchInput(e.target.value)}
+          />
+        </Card>
 
-      <Card className="station-table-card">
-        <Table
-          className="station-table"
-          rowKey="id"
-          columns={columns}
-          dataSource={filtered}
-          loading={isLoading}
-          pagination={{
-            pageSize: 15,
-            showTotal: (total) => `${total} organisation(s)`,
-            showSizeChanger: true,
-            pageSizeOptions: [15, 30, 50, 100],
-          }}
-        />
-      </Card>
-    </main>
+        <Card className="station-table-card">
+          <Table
+            className="station-table"
+            rowKey="id"
+            columns={columns}
+            dataSource={filtered}
+            loading={isLoading}
+            pagination={{
+              pageSize: 15,
+              showTotal: (total) => `${total} organisation(s)`,
+              showSizeChanger: true,
+              pageSizeOptions: [15, 30, 50, 100],
+            }}
+          />
+        </Card>
+      </main>
+    </AppShell>
   );
 }

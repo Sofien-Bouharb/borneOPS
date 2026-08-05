@@ -1,17 +1,11 @@
 // resources/js/pages/AccountPage.tsx
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { List, Tag, Button, Card, Typography, Popconfirm, message } from 'antd';
-import {
-    DeploymentUnitOutlined,
-    DesktopOutlined,
-    LaptopOutlined,
-    LogoutOutlined,
-    SafetyCertificateOutlined,
-    UserOutlined,
-} from '@ant-design/icons';
+import { DesktopOutlined, LaptopOutlined, LogoutOutlined, UserOutlined } from '@ant-design/icons';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../auth/AuthContext';
 import { fetchSessions, revokeSession } from '../api/sessions';
+import AppShell from '../components/AppShell';
 
 const { Text } = Typography;
 
@@ -47,26 +41,8 @@ export default function AccountPage() {
     };
 
     return (
-        <div className="ops-shell">
-            <header className="ops-header">
-                <div className="ops-header__inner">
-                    <div className="brand" aria-label="BorneOPS">
-                        <span className="brand__mark" aria-hidden="true">
-                            <DeploymentUnitOutlined />
-                        </span>
-                        <span>
-                            <span className="brand__name">BorneOPS</span>
-                            <span className="brand__descriptor">Charge network control</span>
-                        </span>
-                    </div>
-                    <div className="ops-header__context">
-                        <SafetyCertificateOutlined aria-hidden="true" />
-                        Authorized operator workspace
-                    </div>
-                </div>
-            </header>
-
-            <main className="ops-main">
+        <AppShell>
+            <div style={{ padding: 24 }}>
                 <div className="dashboard-heading">
                     <div>
                         <p className="section-eyebrow">Access administration</p>
@@ -200,7 +176,7 @@ export default function AccountPage() {
                         </Button>
                     </Popconfirm>
                 </div>
-            </main>
-        </div>
+            </div>
+        </AppShell>
     );
 }

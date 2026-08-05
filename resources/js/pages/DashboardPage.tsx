@@ -1,5 +1,6 @@
 // resources/js/pages/DashboardPage.tsx
 import { useEffect, useRef } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { useQueryClient } from '@tanstack/react-query';
 import { Card, Col, Row, Statistic, Table, Tag, Typography, Alert, Tooltip } from 'antd';
 import type { ColumnsType } from 'antd/es/table';
@@ -15,6 +16,7 @@ import echo from '../echo';
 import AppShell from '../components/AppShell';
 import StationMap from '../components/StationMap';
 import { useSupervisionDashboard, SupervisionStation, SupervisionDashboard } from '../api/supervision';
+import { usePermission } from '../auth/AuthContext';
 import {
     ADMIN_STATUS_LABELS,
     OP_STATUS_LABELS,
@@ -55,6 +57,8 @@ function heartbeatSortValue(value: string | null): number {
 export default function DashboardPage() {
     const { data, isLoading, isError } = useSupervisionDashboard();
     const queryClient = useQueryClient();
+    const navigate = useNavigate();
+    const canViewStationDetail = usePermission('charging_stations.view');
     const refetchTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
     useEffect(() => {
@@ -287,6 +291,14 @@ export default function DashboardPage() {
                         loading={isLoading}
                         pagination={{ pageSize: 15 }}
                         scroll={{ x: 1000 }}
+                        onRow={(station) =>
+                            canViewStationDetail
+                                ? {
+                                      onClick: () => navigate(`/stations/${station.id}`),
+                                      style: { cursor: 'pointer' },
+                                  }
+                                : {}
+                        }
                     />
                 </Card>
             </div>

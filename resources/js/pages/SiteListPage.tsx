@@ -6,6 +6,7 @@ import { useSitesList, type Site } from '../api/sites';
 import { useOrganizations } from '../api/stations';
 import { usePermission } from '../auth/AuthContext';
 import { useDebouncedValue } from '../utils/useDebouncedValue';
+import AppShell from '../components/AppShell';
 
 const { Title } = Typography;
 
@@ -56,65 +57,67 @@ export default function SiteListPage() {
   ];
 
   return (
-    <main className="station-page station-page--list">
-      <Row className="station-page-header" justify="space-between" align="middle" gutter={[20, 16]}>
-        <Col>
-          <Title className="station-page-title" level={3}>Sites</Title>
-        </Col>
-        <Col>
-          <Space className="station-page-actions" wrap>
-            <Button icon={<ReloadOutlined />} onClick={() => refetch()}>Actualiser</Button>
-            {canCreate && (
-              <Button type="primary" icon={<PlusOutlined />} onClick={() => navigate('/sites/new')}>
-                Nouveau site
-              </Button>
-            )}
-          </Space>
-        </Col>
-      </Row>
-
-      <Card className="station-filter-card" size="small">
-        <Row gutter={[12, 12]}>
-          <Col xs={24} sm={12} md={12}>
-            <Input
-              className="station-filter-control"
-              placeholder="Rechercher par nom ou adresse..."
-              prefix={<SearchOutlined />}
-              allowClear
-              value={searchInput}
-              onChange={(e) => setSearchInput(e.target.value)}
-            />
+    <AppShell>
+      <main className="station-page station-page--list">
+        <Row className="station-page-header" justify="space-between" align="middle" gutter={[20, 16]}>
+          <Col>
+            <Title className="station-page-title" level={3}>Sites</Title>
           </Col>
-          {canViewOrgs && (
-            <Col xs={24} sm={12} md={6}>
-              <Select
+          <Col>
+            <Space className="station-page-actions" wrap>
+              <Button icon={<ReloadOutlined />} onClick={() => refetch()}>Actualiser</Button>
+              {canCreate && (
+                <Button type="primary" icon={<PlusOutlined />} onClick={() => navigate('/sites/new')}>
+                  Nouveau site
+                </Button>
+              )}
+            </Space>
+          </Col>
+        </Row>
+
+        <Card className="station-filter-card" size="small">
+          <Row gutter={[12, 12]}>
+            <Col xs={24} sm={12} md={12}>
+              <Input
                 className="station-filter-control"
-                placeholder="Organisation"
+                placeholder="Rechercher par nom ou adresse..."
+                prefix={<SearchOutlined />}
                 allowClear
-                value={orgFilter}
-                onChange={(v) => setOrgFilter(v)}
-                options={organizations?.map((o) => ({ value: o.id, label: o.name })) ?? []}
+                value={searchInput}
+                onChange={(e) => setSearchInput(e.target.value)}
               />
             </Col>
-          )}
-        </Row>
-      </Card>
+            {canViewOrgs && (
+              <Col xs={24} sm={12} md={6}>
+                <Select
+                  className="station-filter-control"
+                  placeholder="Organisation"
+                  allowClear
+                  value={orgFilter}
+                  onChange={(v) => setOrgFilter(v)}
+                  options={organizations?.map((o) => ({ value: o.id, label: o.name })) ?? []}
+                />
+              </Col>
+            )}
+          </Row>
+        </Card>
 
-      <Card className="station-table-card">
-        <Table
-          className="station-table"
-          rowKey="id"
-          columns={columns}
-          dataSource={filtered}
-          loading={isLoading}
-          pagination={{
-            pageSize: 15,
-            showTotal: (total) => `${total} site(s)`,
-            showSizeChanger: true,
-            pageSizeOptions: [15, 30, 50, 100],
-          }}
-        />
-      </Card>
-    </main>
+        <Card className="station-table-card">
+          <Table
+            className="station-table"
+            rowKey="id"
+            columns={columns}
+            dataSource={filtered}
+            loading={isLoading}
+            pagination={{
+              pageSize: 15,
+              showTotal: (total) => `${total} site(s)`,
+              showSizeChanger: true,
+              pageSizeOptions: [15, 30, 50, 100],
+            }}
+          />
+        </Card>
+      </main>
+    </AppShell>
   );
 }
