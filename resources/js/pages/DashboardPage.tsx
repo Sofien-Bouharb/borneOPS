@@ -1,5 +1,6 @@
 // resources/js/pages/DashboardPage.tsx
-import { useEffect } from 'react';
+import { useEffect, useRef } from 'react';
+import { useQueryClient } from '@tanstack/react-query';
 import { Card, Col, Row, Statistic, Table, Tag, Typography, Alert, Tooltip } from 'antd';
 import type { ColumnsType } from 'antd/es/table';
 import {
@@ -12,7 +13,7 @@ import {
 } from '@ant-design/icons';
 import echo from '../echo';
 import AppShell from '../components/AppShell';
-import { useSupervisionDashboard, SupervisionStation } from '../api/supervision';
+import { useSupervisionDashboard, SupervisionStation, SupervisionDashboard } from '../api/supervision';
 import {
     ADMIN_STATUS_LABELS,
     OP_STATUS_LABELS,
@@ -52,18 +53,44 @@ function heartbeatSortValue(value: string | null): number {
 
 export default function DashboardPage() {
     const { data, isLoading, isError } = useSupervisionDashboard();
+    const queryClient = useQueryClient();
+    const refetchTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
     useEffect(() => {
-        echo.private('supervision').listen('.station.updated', (e: unknown) => {
-            console.log('Received event:', e);
-        });
+        const channel = echo.private('supervision').listen(
+            '.station.updated',
+            (e: { station: SupervisionStation }) => {
+                queryClient.setQueryData<SupervisionDashboard | undefined>(
+                    ['supervision-dashboard'],
+                    (current) => {
+                        if (!current) return current;
 
-        console.log('Subscribed to private-supervision channel.');
+                        const stationExists = current.stations.some((s) => s.id === e.station.id);
+
+                        const updatedStations = stationExists
+                            ? current.stations.map((s) => (s.id === e.station.id ? e.station : s))
+                            : [...current.stations, e.station];
+
+                        return { ...current, stations: updatedStations };
+                    },
+                );
+
+                if (refetchTimeoutRef.current) {
+                    clearTimeout(refetchTimeoutRef.current);
+                }
+                refetchTimeoutRef.current = setTimeout(() => {
+                    queryClient.invalidateQueries({ queryKey: ['supervision-dashboard'] });
+                }, 500);
+            },
+        );
 
         return () => {
+            if (refetchTimeoutRef.current) {
+                clearTimeout(refetchTimeoutRef.current);
+            }
             echo.leave('supervision');
         };
-    }, []);
+    }, [queryClient]);
 
     const columns: ColumnsType<SupervisionStation> = [
         {
