@@ -1,11 +1,13 @@
 // resources/js/components/StationMap.tsx
 import { useMemo, useRef } from 'react';
 import { MapContainer, TileLayer, CircleMarker, Popup } from 'react-leaflet';
-import type { Map as LeafletMap, LatLngBoundsExpression } from 'leaflet';
-import { Tag, Typography } from 'antd';
-import { WarningOutlined } from '@ant-design/icons';
+import type { Map as LeafletMap, LatLngBoundsExpression, LeafletMouseEvent } from 'leaflet';
+import { useNavigate } from 'react-router-dom';
+import { Tag, Typography, Button } from 'antd';
+import { WarningOutlined, ArrowRightOutlined } from '@ant-design/icons';
 import { SupervisionStation } from '../api/supervision';
 import { getStationMarkerState, isMissingCoordinates } from '../utils/stationMarkerState';
+import { usePermission } from '../auth/AuthContext';
 import {
     ADMIN_STATUS_LABELS,
     OP_STATUS_LABELS,
@@ -26,6 +28,8 @@ interface StationMapProps {
 
 export default function StationMap({ stations, height = 480 }: StationMapProps) {
     const mapRef = useRef<LeafletMap | null>(null);
+    const navigate = useNavigate();
+    const canViewStationDetail = usePermission('charging_stations.view');
 
     const plottableStations = useMemo(
         () => stations.filter((station) => !isMissingCoordinates(station)),
@@ -80,8 +84,15 @@ export default function StationMap({ stations, height = 480 }: StationMapProps) 
                             fillOpacity: 0.85,
                             weight: 2,
                         }}
+                        eventHandlers={{
+                            mouseover: (e: LeafletMouseEvent) => e.target.openPopup(),
+                            mouseout: (e: LeafletMouseEvent) => e.target.closePopup(),
+                            ...(canViewStationDetail
+                                ? { dblclick: () => navigate(`/stations/${station.id}`) }
+                                : {}),
+                        }}
                     >
-                        <Popup>
+                        <Popup autoPan={false} closeButton={false}>
                             <div style={{ minWidth: 200 }}>
                                 <div style={{ fontWeight: 600, marginBottom: 2 }}>{station.name}</div>
                                 <Text type="secondary" style={{ fontSize: 12 }}>
@@ -108,6 +119,17 @@ export default function StationMap({ stations, height = 480 }: StationMapProps) 
                                         <WarningOutlined style={{ marginRight: 4 }} />
                                         {station.actual_connector_count}/{station.declared_connector_count} connecteurs
                                     </div>
+                                )}
+                                {canViewStationDetail && (
+                                    <Button
+                                        type="link"
+                                        size="small"
+                                        style={{ padding: 0, marginTop: 10 }}
+                                        icon={<ArrowRightOutlined />}
+                                        onClick={() => navigate(`/stations/${station.id}`)}
+                                    >
+                                        Voir les détails
+                                    </Button>
                                 )}
                             </div>
                         </Popup>
