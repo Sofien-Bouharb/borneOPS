@@ -7,6 +7,7 @@ import '../../css/stations.css';
 import { usePermission } from '../auth/AuthContext';
 import { ADMIN_STATUS_LABELS, OP_STATUS_LABELS } from '../utils/stationLabels';
 import { useDebouncedValue } from '../utils/useDebouncedValue';
+import AppShell from '../components/AppShell';
 
 const { Title } = Typography;
 
@@ -64,13 +65,13 @@ export default function StationListPage() {
       title: 'Site',
       key: 'site',
       render: (_: unknown, record: ChargingStation) =>
-        record.site?.name ?? <span style={{ color: '#999' }}>—</span>,
+        record.site?.name ?? <span style={{ color: 'var(--ops-text-muted)' }}>—</span>,
     },
     {
       title: 'Organisation',
       key: 'organization',
       render: (_: unknown, record: ChargingStation) =>
-        record.site?.organization?.name ?? <span style={{ color: '#999' }}>—</span>,
+        record.site?.organization?.name ?? <span style={{ color: 'var(--ops-text-muted)' }}>—</span>,
     },
     {
       title: 'Puissance',
@@ -120,121 +121,123 @@ export default function StationListPage() {
   ];
 
   return (
-    <main className="station-page station-page--list">
-      <Row className="station-page-header" justify="space-between" align="middle" gutter={[20, 16]}>
-        <Col>
-          <Title className="station-page-title" level={3}>Bornes de recharge</Title>
-        </Col>
-        <Col>
-          <Space className="station-page-actions" wrap>
-            <Button icon={<ReloadOutlined />} onClick={() => refetch()}>
-              Actualiser
-            </Button>
-            {canCreate && (
-              <Button type="primary" icon={<PlusOutlined />} onClick={() => navigate('/stations/new')}>
-                Nouvelle borne
+    <AppShell>
+      <main className="station-page station-page--list">
+        <Row className="station-page-header" justify="space-between" align="middle" gutter={[20, 16]}>
+          <Col>
+            <Title className="station-page-title" level={3}>Bornes de recharge</Title>
+          </Col>
+          <Col>
+            <Space className="station-page-actions" wrap>
+              <Button icon={<ReloadOutlined />} onClick={() => refetch()}>
+                Actualiser
               </Button>
-            )}
-          </Space>
-        </Col>
-      </Row>
-
-      <Card className="station-filter-card" size="small">
-        <Row gutter={[12, 12]}>
-          <Col xs={24} sm={12} md={6}>
-            <Input
-              className="station-filter-control"
-              placeholder="Rechercher..."
-              prefix={<SearchOutlined />}
-              allowClear
-              value={searchInput}
-              onChange={(e) => setSearchInput(e.target.value)}
-            />
+              {canCreate && (
+                <Button type="primary" icon={<PlusOutlined />} onClick={() => navigate('/stations/new')}>
+                  Nouvelle borne
+                </Button>
+              )}
+            </Space>
           </Col>
-          <Col xs={24} sm={12} md={5}>
-            <Select
-              className="station-filter-control"
-              placeholder="Statut admin."
-              allowClear
-              onChange={(v) => updateFilter('administrative_status', v)}
-              options={Object.entries(ADMIN_STATUS_LABELS).map(([value, label]) => ({ value, label }))}
-            />
-          </Col>
-          <Col xs={24} sm={12} md={5}>
-            <Select
-              className="station-filter-control"
-              placeholder="État opérationnel"
-              allowClear
-              onChange={(v) => updateFilter('operational_status', v)}
-              options={Object.entries(OP_STATUS_LABELS).map(([value, label]) => ({ value, label }))}
-            />
-          </Col>
-          {canViewOrgs && (
-          <Col xs={24} sm={12} md={4}>
-            <Select
-              className="station-filter-control"
-              placeholder="Organisation"
-              allowClear
-              value={filters.organization_id}
-              onChange={(v) => {
-                setFilters((prev) => {
-                  const next = { ...prev, organization_id: v || undefined, page: 1 };
-                  // If a site was selected but no longer belongs to the new org, clear it
-                  if (next.organization_id && next.site_id) {
-                    const site = sites?.find((s) => s.id === next.site_id);
-                    if (!site || site.organization_id !== next.organization_id) {
-                      next.site_id = undefined;
-                    }
-                  }
-                  return next;
-                });
-              }}
-        options={organizations?.map((o) => ({ value: o.id, label: o.name })) ?? []}
-            />
-          </Col>
-          )}
-          {canViewSites && (
-          <Col xs={24} sm={12} md={4}>
-            <Select
-              className="station-filter-control"
-              placeholder="Site"
-              allowClear
-              value={filters.site_id}
-              onChange={(v) => updateFilter('site_id', v)}
-              options={
-                sites
-                  ?.filter((s) => !filters.organization_id || s.organization_id === filters.organization_id)
-                  .map((s) => ({ value: s.id, label: s.name })) ?? []
-              }
-            />
-          </Col>
-          )}
         </Row>
-      </Card>
 
-      <Card className="station-table-card">
-        <Table
-          className="station-table"
-          rowKey="id"
-          columns={columns}
-          dataSource={data?.data ?? []}
-          loading={isLoading}
-          scroll={{ x: 1020 }}
-          pagination={{
-            current: data?.meta.current_page ?? 1,
-            pageSize: data?.meta.per_page ?? 15,
-            total: data?.meta.total ?? 0,
-            onChange: (page, pageSize) => setFilters((prev) => ({ ...prev, page, per_page: pageSize })),
-            showTotal: (total) => `${total} borne(s)`,
-            showSizeChanger: true,
-            pageSizeOptions: [15, 30, 50, 100],
-          }}
-          onRow={(record) => ({
-            onClick: () => navigate(`/stations/${record.id}`),
-            className: 'station-table__row',
-          })}
-        />
-      </Card>
-    </main>
+        <Card className="station-filter-card" size="small">
+          <Row gutter={[12, 12]}>
+            <Col xs={24} sm={12} md={6}>
+              <Input
+                className="station-filter-control"
+                placeholder="Rechercher..."
+                prefix={<SearchOutlined />}
+                allowClear
+                value={searchInput}
+                onChange={(e) => setSearchInput(e.target.value)}
+              />
+            </Col>
+            <Col xs={24} sm={12} md={5}>
+              <Select
+                className="station-filter-control"
+                placeholder="Statut admin."
+                allowClear
+                onChange={(v) => updateFilter('administrative_status', v)}
+                options={Object.entries(ADMIN_STATUS_LABELS).map(([value, label]) => ({ value, label }))}
+              />
+            </Col>
+            <Col xs={24} sm={12} md={5}>
+              <Select
+                className="station-filter-control"
+                placeholder="État opérationnel"
+                allowClear
+                onChange={(v) => updateFilter('operational_status', v)}
+                options={Object.entries(OP_STATUS_LABELS).map(([value, label]) => ({ value, label }))}
+              />
+            </Col>
+            {canViewOrgs && (
+            <Col xs={24} sm={12} md={4}>
+              <Select
+                className="station-filter-control"
+                placeholder="Organisation"
+                allowClear
+                value={filters.organization_id}
+                onChange={(v) => {
+                  setFilters((prev) => {
+                    const next = { ...prev, organization_id: v || undefined, page: 1 };
+                    // If a site was selected but no longer belongs to the new org, clear it
+                    if (next.organization_id && next.site_id) {
+                      const site = sites?.find((s) => s.id === next.site_id);
+                      if (!site || site.organization_id !== next.organization_id) {
+                        next.site_id = undefined;
+                      }
+                    }
+                    return next;
+                  });
+                }}
+          options={organizations?.map((o) => ({ value: o.id, label: o.name })) ?? []}
+              />
+            </Col>
+            )}
+            {canViewSites && (
+            <Col xs={24} sm={12} md={4}>
+              <Select
+                className="station-filter-control"
+                placeholder="Site"
+                allowClear
+                value={filters.site_id}
+                onChange={(v) => updateFilter('site_id', v)}
+                options={
+                  sites
+                    ?.filter((s) => !filters.organization_id || s.organization_id === filters.organization_id)
+                    .map((s) => ({ value: s.id, label: s.name })) ?? []
+                }
+              />
+            </Col>
+            )}
+          </Row>
+        </Card>
+
+        <Card className="station-table-card">
+          <Table
+            className="station-table"
+            rowKey="id"
+            columns={columns}
+            dataSource={data?.data ?? []}
+            loading={isLoading}
+            scroll={{ x: 1020 }}
+            pagination={{
+              current: data?.meta.current_page ?? 1,
+              pageSize: data?.meta.per_page ?? 15,
+              total: data?.meta.total ?? 0,
+              onChange: (page, pageSize) => setFilters((prev) => ({ ...prev, page, per_page: pageSize })),
+              showTotal: (total) => `${total} borne(s)`,
+              showSizeChanger: true,
+              pageSizeOptions: [15, 30, 50, 100],
+            }}
+            onRow={(record) => ({
+              onClick: () => navigate(`/stations/${record.id}`),
+              className: 'station-table__row',
+            })}
+          />
+        </Card>
+      </main>
+    </AppShell>
   );
 }

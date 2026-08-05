@@ -1,206 +1,311 @@
 // resources/js/pages/DashboardPage.tsx
-import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { List, Tag, Button, Card, Typography, Popconfirm, message } from 'antd';
-import {
-    DeploymentUnitOutlined,
-    DesktopOutlined,
-    LaptopOutlined,
-    LogoutOutlined,
-    SafetyCertificateOutlined,
-    UserOutlined,
-} from '@ant-design/icons';
+import { useEffect, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { useAuth } from '../auth/AuthContext';
-import { fetchSessions, revokeSession } from '../api/sessions';
+import { useQueryClient } from '@tanstack/react-query';
+import { Card, Col, Row, Statistic, Table, Tag, Typography, Alert, Tooltip } from 'antd';
+import type { ColumnsType } from 'antd/es/table';
+import {
+    ThunderboltOutlined,
+    WifiOutlined,
+    DisconnectOutlined,
+    ApiOutlined,
+    WarningOutlined,
+    EnvironmentOutlined,
+} from '@ant-design/icons';
+import echo from '../echo';
+import AppShell from '../components/AppShell';
+import StationMap from '../components/StationMap';
+import { useSupervisionDashboard, SupervisionStation, SupervisionDashboard } from '../api/supervision';
+import { usePermission } from '../auth/AuthContext';
+import {
+    ADMIN_STATUS_LABELS,
+    OP_STATUS_LABELS,
+    CONNECTION_STATUS_LABELS,
+} from '../utils/stationLabels';
 
 const { Text } = Typography;
 
-export default function DashboardPage() {
-    const { user, logoutAll } = useAuth();
-    const navigate = useNavigate();
-    const queryClient = useQueryClient();
+function connectionStatusColor(status: string): string {
+    return status === 'connected' ? 'green' : 'red';
+}
 
-    const {
-        data: sessions,
-        isLoading,
-        isError,
-    } = useQuery({
-        queryKey: ['sessions'],
-        queryFn: fetchSessions,
-    });
-
-    const revokeMutation = useMutation({
-        mutationFn: revokeSession,
-        onSuccess: () => {
-            message.success('Session revoked.');
-            queryClient.invalidateQueries({ queryKey: ['sessions'] });
-        },
-        onError: () => {
-            message.error('Could not revoke that session. It may already be gone.');
-            queryClient.invalidateQueries({ queryKey: ['sessions'] });
-        },
-    });
-
-    const handleLogoutEverywhere = async () => {
-        await logoutAll();
-        navigate('/login', { replace: true });
+function operationalStatusColor(status: string): string {
+    const colors: Record<string, string> = {
+        available: 'green',
+        occupied: 'blue',
+        out_of_service: 'default',
+        maintenance: 'orange',
+        disconnected: 'default',
+        fault: 'red',
     };
+    return colors[status] ?? 'default';
+}
+
+function formatHeartbeat(value: string | null): string {
+    if (!value) return 'Jamais';
+    const date = new Date(value);
+    const diffSeconds = Math.round((Date.now() - date.getTime()) / 1000);
+    if (diffSeconds < 60) return `Il y a ${diffSeconds}s`;
+    if (diffSeconds < 3600) return `Il y a ${Math.round(diffSeconds / 60)} min`;
+    return date.toLocaleString();
+}
+
+function heartbeatSortValue(value: string | null): number {
+    return value ? new Date(value).getTime() : -1;
+}
+
+export default function DashboardPage() {
+    const { data, isLoading, isError } = useSupervisionDashboard();
+    const queryClient = useQueryClient();
+    const navigate = useNavigate();
+    const canViewStationDetail = usePermission('charging_stations.view');
+    const refetchTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+    useEffect(() => {
+        echo.private('supervision').listen(
+            '.station.updated',
+            (e: { station: SupervisionStation }) => {
+                console.log('Received event:', e);
+
+                queryClient.setQueryData<SupervisionDashboard | undefined>(
+                    ['supervision-dashboard'],
+                    (current) => {
+                        if (!current) return current;
+
+                        const stationExists = current.stations.some((s) => s.id === e.station.id);
+
+                        const updatedStations = stationExists
+                            ? current.stations.map((s) => (s.id === e.station.id ? e.station : s))
+                            : [...current.stations, e.station];
+
+                        return { ...current, stations: updatedStations };
+                    },
+                );
+
+                if (refetchTimeoutRef.current) {
+                    clearTimeout(refetchTimeoutRef.current);
+                }
+                refetchTimeoutRef.current = setTimeout(() => {
+                    queryClient.invalidateQueries({ queryKey: ['supervision-dashboard'] });
+                }, 500);
+            },
+        );
+
+        console.log('Subscribed to private-supervision channel.');
+
+        return () => {
+            if (refetchTimeoutRef.current) {
+                clearTimeout(refetchTimeoutRef.current);
+            }
+            echo.leave('supervision');
+        };
+    }, [queryClient]);
+
+    const columns: ColumnsType<SupervisionStation> = [
+        {
+            title: 'Borne',
+            dataIndex: 'name',
+            key: 'name',
+            sorter: (a, b) => a.name.localeCompare(b.name),
+            render: (_, station) => (
+                <div>
+                    <div>{station.name}</div>
+                    <Text type="secondary" style={{ fontSize: 12 }}>
+                        {station.reference}
+                    </Text>
+                </div>
+            ),
+        },
+        {
+            title: 'Site / Organisation',
+            key: 'site',
+            render: (_, station) => (
+                <div>
+                    <div>{station.site?.name ?? '—'}</div>
+                    <Text type="secondary" style={{ fontSize: 12 }}>
+                        {station.site?.organization?.name ?? ''}
+                    </Text>
+                </div>
+            ),
+        },
+        {
+            title: 'Statut administratif',
+            dataIndex: 'administrative_status',
+            key: 'administrative_status',
+            sorter: (a, b) => a.administrative_status.localeCompare(b.administrative_status),
+            render: (value: string) => <Tag>{ADMIN_STATUS_LABELS[value] ?? value}</Tag>,
+        },
+        {
+            title: 'État opérationnel',
+            dataIndex: 'operational_status',
+            key: 'operational_status',
+            sorter: (a, b) => a.operational_status.localeCompare(b.operational_status),
+            render: (value: string) => (
+                <Tag color={operationalStatusColor(value)}>{OP_STATUS_LABELS[value] ?? value}</Tag>
+            ),
+        },
+        {
+            title: 'Connexion',
+            dataIndex: 'connection_status',
+            key: 'connection_status',
+            sorter: (a, b) => a.connection_status.localeCompare(b.connection_status),
+            render: (value: string) => (
+                <Tag color={connectionStatusColor(value)}>
+                    {CONNECTION_STATUS_LABELS[value] ?? value}
+                </Tag>
+            ),
+        },
+        {
+            title: 'Dernier heartbeat',
+            dataIndex: 'last_heartbeat_at',
+            key: 'last_heartbeat_at',
+            sorter: (a, b) => heartbeatSortValue(a.last_heartbeat_at) - heartbeatSortValue(b.last_heartbeat_at),
+            render: (value: string | null) => formatHeartbeat(value),
+        },
+        {
+            title: 'Connecteurs',
+            key: 'connectors',
+            render: (_, station) => {
+                const mismatch = station.connector_count_matches === false;
+                return (
+                    <span>
+                        {station.actual_connector_count ?? '—'}/{station.declared_connector_count}
+                        {mismatch && (
+                            <Tooltip title="Le nombre réel de connecteurs ne correspond pas au nombre déclaré.">
+                                <WarningOutlined style={{ color: '#d4380d', marginLeft: 6 }} />
+                            </Tooltip>
+                        )}
+                    </span>
+                );
+            },
+        },
+    ];
+
+    const missingCoordinatesCount = data?.kpis.stations_missing_coordinates ?? 0;
 
     return (
-        <div className="ops-shell">
-            <header className="ops-header">
-                <div className="ops-header__inner">
-                    <div className="brand" aria-label="BorneOPS">
-                        <span className="brand__mark" aria-hidden="true">
-                            <DeploymentUnitOutlined />
-                        </span>
-                        <span>
-                            <span className="brand__name">BorneOPS</span>
-                            <span className="brand__descriptor">Charge network control</span>
-                        </span>
-                    </div>
-                    <div className="ops-header__context">
-                        <SafetyCertificateOutlined aria-hidden="true" />
-                        Authorized operator workspace
-                    </div>
-                </div>
-            </header>
-
-            <main className="ops-main">
+        <AppShell>
+            <div style={{ padding: 24 }}>
                 <div className="dashboard-heading">
                     <div>
-                        <p className="section-eyebrow">Access administration</p>
-                        <h1>Account &amp; sessions</h1>
-                        <p>Review operator access and revoke sessions you do not recognize.</p>
+                        <p className="section-eyebrow">Real-time supervision</p>
+                        <h1>Supervision dashboard</h1>
+                        <p>Live overview of every charging station across the network.</p>
                     </div>
                 </div>
 
-                <Card className="account-card">
-                    <div className="account-card__body">
-                        <div className="account-identity">
-                            <div className="account-avatar" aria-hidden="true">
-                                <UserOutlined />
-                            </div>
-                            <div>
-                                <span className="account-name">{user?.name}</span>
-                                <Text type="secondary">{user?.email}</Text>
-                            </div>
-                        </div>
-                        <div className="role-list" aria-label="Assigned roles">
-                            {user?.roles?.map((role) => (
-                                <Tag className="role-tag" key={role}>
-                                    {role}
-                                </Tag>
-                            ))}
-                        </div>
-                    </div>
-                </Card>
+                {isError && (
+                    <Alert
+                        type="error"
+                        message="Impossible de charger le tableau de bord de supervision."
+                        style={{ marginBottom: 24 }}
+                    />
+                )}
+
+                <Row gutter={[16, 16]} style={{ marginBottom: 24 }}>
+                    <Col xs={12} sm={8} md={4}>
+                        <Card loading={isLoading}>
+                            <Statistic
+                                title="Bornes"
+                                value={data?.kpis.stations_total ?? 0}
+                                prefix={<ThunderboltOutlined />}
+                            />
+                        </Card>
+                    </Col>
+                    <Col xs={12} sm={8} md={4}>
+                        <Card loading={isLoading}>
+                            <Statistic
+                                title="Connectées"
+                                value={data?.kpis.stations_by_connection_status.connected ?? 0}
+                                prefix={<WifiOutlined />}
+                                styles={{ content: { color: '#157A6E' } }}
+                            />
+                        </Card>
+                    </Col>
+                    <Col xs={12} sm={8} md={4}>
+                        <Card loading={isLoading}>
+                            <Statistic
+                                title="Déconnectées"
+                                value={data?.kpis.stations_by_connection_status.disconnected ?? 0}
+                                prefix={<DisconnectOutlined />}
+                                styles={{ content: { color: '#a8071a' } }}
+                            />
+                        </Card>
+                    </Col>
+                    <Col xs={12} sm={8} md={4}>
+                        <Card loading={isLoading}>
+                            <Statistic
+                                title="Connecteurs"
+                                value={data?.kpis.connectors_total ?? 0}
+                                prefix={<ApiOutlined />}
+                            />
+                        </Card>
+                    </Col>
+                    <Col xs={12} sm={8} md={4}>
+                        <Card loading={isLoading}>
+                            <Statistic
+                                title="Écarts connecteurs"
+                                value={data?.kpis.stations_with_connector_mismatch ?? 0}
+                                prefix={<WarningOutlined />}
+                                styles={{
+                                    content: {
+                                        color: (data?.kpis.stations_with_connector_mismatch ?? 0) > 0 ? '#d4380d' : undefined,
+                                    },
+                                }}
+                            />
+                        </Card>
+                    </Col>
+                    {missingCoordinatesCount > 0 && (
+                        <Col xs={12} sm={8} md={4}>
+                            <Card loading={isLoading}>
+                                <Statistic
+                                    title="Coordonnées manquantes"
+                                    value={missingCoordinatesCount}
+                                    prefix={<EnvironmentOutlined />}
+                                    styles={{ content: { color: '#d4380d' } }}
+                                />
+                            </Card>
+                        </Col>
+                    )}
+                </Row>
 
                 <Card
-                    className="sessions-card"
-                    title={
-                        <div className="sessions-title">
-                            <span className="sessions-title__label">
-                                <DesktopOutlined aria-hidden="true" />
-                                Active sessions
-                            </span>
-                            {!isLoading && !isError && (
-                                <span className="sessions-title__count">
-                                    {sessions?.length ?? 0}{' '}
-                                    {(sessions?.length ?? 0) === 1 ? 'session' : 'sessions'}
-                                </span>
-                            )}
-                        </div>
-                    }
+                    title="Carte en temps réel"
+                    style={{ marginBottom: 24 }}
+                    styles={{ body: { padding: 0 } }}
                     loading={isLoading}
                 >
-                    {isError && (
-                        <Text type="danger" role="alert">
-                            Couldn’t load your active sessions. Try refreshing the page.
-                        </Text>
+                    <StationMap stations={data?.stations ?? []} />
+                    {missingCoordinatesCount > 0 && (
+                        <div style={{ padding: '10px 16px', borderTop: '1px solid #E7EDF1', fontSize: 13, color: '#5B6F7F' }}>
+                            <WarningOutlined style={{ marginRight: 6, color: '#d4380d' }} />
+                            {missingCoordinatesCount} borne{missingCoordinatesCount > 1 ? 's' : ''} sans coordonnées
+                            {missingCoordinatesCount > 1 ? ' ne sont' : ' n\'est'} pas affichée
+                            {missingCoordinatesCount > 1 ? 's' : ''} sur la carte (toujours visible
+                            {missingCoordinatesCount > 1 ? 's' : ''} dans la liste ci-dessous).
+                        </div>
                     )}
-
-                    <List
-                        dataSource={sessions ?? []}
-                        locale={{ emptyText: 'No active sessions found.' }}
-                        renderItem={(session) => (
-                            <List.Item
-                                className="session-item"
-                                key={session.id}
-                                actions={
-                                    session.is_current
-                                        ? []
-                                        : [
-                                              <Popconfirm
-                                                  key="revoke"
-                                                  title="Revoke this session?"
-                                                  description="That device will be signed out immediately."
-                                                  okText="Revoke"
-                                                  okButtonProps={{ danger: true }}
-                                                  onConfirm={() => revokeMutation.mutate(session.id)}
-                                              >
-                                                  <Button
-                                                      danger
-                                                      size="small"
-                                                      loading={
-                                                          revokeMutation.isPending &&
-                                                          revokeMutation.variables === session.id
-                                                      }
-                                                      aria-label="Revoke this device session"
-                                                  >
-                                                      Revoke access
-                                                  </Button>
-                                              </Popconfirm>,
-                                          ]
-                                }
-                            >
-                                <div className="session-meta">
-                                    <div
-                                        className={`session-icon${session.is_current ? ' session-icon--current' : ''}`}
-                                        aria-hidden="true"
-                                    >
-                                        <LaptopOutlined />
-                                    </div>
-                                    <div>
-                                        <div className="session-name">
-                                            {session.is_current ? 'This device' : 'Signed-in device'}
-                                            {session.is_current && (
-                                                <Tag className="current-tag">Current session</Tag>
-                                            )}
-                                        </div>
-                                        <div className="session-time">
-                                            Signed in{' '}
-                                            <time dateTime={session.created_at}>
-                                                {new Date(session.created_at).toLocaleString()}
-                                            </time>
-                                        </div>
-                                    </div>
-                                </div>
-                            </List.Item>
-                        )}
-                    />
                 </Card>
 
-                <div className="danger-zone">
-                    <div>
-                        <span className="danger-zone__title">End all operator sessions</span>
-                        <span className="danger-zone__copy">
-                            Sign this account out on every device, including this one.
-                        </span>
-                    </div>
-                    <Popconfirm
-                        title="Log out everywhere?"
-                        description="This will end every active session on every device, including this one."
-                        okText="Log out everywhere"
-                        okButtonProps={{ danger: true }}
-                        onConfirm={handleLogoutEverywhere}
-                    >
-                        <Button danger icon={<LogoutOutlined />}>
-                            Log out everywhere
-                        </Button>
-                    </Popconfirm>
-                </div>
-            </main>
-        </div>
+                <Card title="Bornes" styles={{ body: { padding: 0 } }}>
+                    <Table
+                        rowKey="id"
+                        columns={columns}
+                        dataSource={data?.stations ?? []}
+                        loading={isLoading}
+                        pagination={{ pageSize: 15 }}
+                        scroll={{ x: 1000 }}
+                        onRow={(station) =>
+                            canViewStationDetail
+                                ? {
+                                      onClick: () => navigate(`/stations/${station.id}`),
+                                      style: { cursor: 'pointer' },
+                                  }
+                                : {}
+                        }
+                    />
+                </Card>
+            </div>
+        </AppShell>
     );
 }

@@ -64,6 +64,9 @@ class RolesAndPermissionsSeeder extends Seeder
             'connectors.delete',
             'connectors.state.update',
             'connectors.availability.update',
+
+            // Module 4 — Real-Time Supervision
+            'supervision.view',
         ];
 
         foreach ($permissions as $permissionName) {
@@ -79,6 +82,7 @@ class RolesAndPermissionsSeeder extends Seeder
                 'sites.view', 'sites.create', 'sites.update',
                 'connectors.view', 'connectors.create', 'connectors.update', 'connectors.delete',
                 'connectors.state.update', 'connectors.availability.update',
+                'supervision.view',
             ],
             'Exploitant' => [
                 'charging_stations.view', 'charging_stations.create', 'charging_stations.update',
@@ -88,6 +92,7 @@ class RolesAndPermissionsSeeder extends Seeder
                 'sites.view', 'sites.create', 'sites.update',
                 'connectors.view', 'connectors.create', 'connectors.update', 'connectors.delete',
                 'connectors.state.update', 'connectors.availability.update',
+                'supervision.view',
             ],
             'Opérateur' => [
                 'charging_stations.view',
@@ -95,6 +100,7 @@ class RolesAndPermissionsSeeder extends Seeder
                 'charging_stations.history.view',
                 'connectors.view',
                 'connectors.state.update',
+                'supervision.view',
             ],
             'Technicien' => [
                 // charging_stations.state.update deliberately withheld — roadmap marks it "possibly, scoped"
@@ -105,15 +111,18 @@ class RolesAndPermissionsSeeder extends Seeder
                 'charging_stations.history.view',
                 'connectors.view',
                 'connectors.state.update',
+                'supervision.view',
             ],
             'Service Client' => [
                 'charging_stations.view',
                 'charging_stations.history.view',
                 'connectors.view',
+                'supervision.view',
             ],
             'Finance' => [
                 'charging_stations.view',
                 'connectors.view',
+                'supervision.view',
             ],
             'Client' => [
                 // No access — deferred until organization_user scoping exists (Module 6).

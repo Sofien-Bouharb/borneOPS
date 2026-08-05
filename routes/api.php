@@ -1,6 +1,7 @@
 <?php
 
 use Illuminate\Support\Facades\Route;
+use Illuminate\Support\Facades\Broadcast;
 use App\Http\Controllers\AuthController;
 use App\Http\Controllers\PasswordResetController;
 use App\Http\Controllers\SessionController;
@@ -8,6 +9,7 @@ use App\Http\Controllers\OrganizationController;
 use App\Http\Controllers\SiteController;
 use App\Http\Controllers\ChargingStationController;
 use App\Http\Controllers\ConnectorController;
+use App\Http\Controllers\SupervisionController;
 
 
 Route::post('/login', [AuthController::class, 'login'])
@@ -34,6 +36,9 @@ Route::middleware('auth:api')->group(function () {
     Route::post('/logout-all', [AuthController::class, 'logoutAll']);
     Route::get('/sessions', [SessionController::class, 'index']);
     Route::delete('/sessions/{sessionId}', [SessionController::class, 'destroy']);
+
+    // --- Broadcasting authorization (private/presence channels) ---
+    Broadcast::routes(['middleware' => ['auth:api']]);
 
     // --- Module 2: Organizations ---
     Route::get('/organizations', [OrganizationController::class, 'index'])
@@ -92,4 +97,8 @@ Route::middleware('auth:api')->group(function () {
         ->middleware('permission:connectors.state.update');
     Route::patch('/charging-stations/{station}/connectors/{connector}/availability', [ConnectorController::class, 'updateAvailability'])
         ->middleware('permission:connectors.availability.update');
+
+        // --- Module 4: Real-Time Supervision ---
+    Route::get('/supervision/dashboard', [SupervisionController::class, 'dashboard'])
+        ->middleware('permission:supervision.view');
 });
