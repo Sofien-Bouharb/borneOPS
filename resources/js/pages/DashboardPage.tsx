@@ -207,7 +207,7 @@ export default function DashboardPage() {
                                 title="Connectées"
                                 value={data?.kpis.stations_by_connection_status.connected ?? 0}
                                 prefix={<WifiOutlined />}
-                                valueStyle={{ color: '#157A6E' }}
+                                styles={{ content: { color: '#157A6E' } }}
                             />
                         </Card>
                     </Col>
@@ -217,7 +217,7 @@ export default function DashboardPage() {
                                 title="Déconnectées"
                                 value={data?.kpis.stations_by_connection_status.disconnected ?? 0}
                                 prefix={<DisconnectOutlined />}
-                                valueStyle={{ color: '#a8071a' }}
+                                styles={{ content: { color: '#a8071a' } }}
                             />
                         </Card>
                     </Col>
@@ -236,8 +236,10 @@ export default function DashboardPage() {
                                 title="Écarts connecteurs"
                                 value={data?.kpis.stations_with_connector_mismatch ?? 0}
                                 prefix={<WarningOutlined />}
-                                valueStyle={{
-                                    color: (data?.kpis.stations_with_connector_mismatch ?? 0) > 0 ? '#d4380d' : undefined,
+                                styles={{
+                                    content: {
+                                        color: (data?.kpis.stations_with_connector_mismatch ?? 0) > 0 ? '#d4380d' : undefined,
+                                    },
                                 }}
                             />
                         </Card>
@@ -249,14 +251,14 @@ export default function DashboardPage() {
                                     title="Coordonnées manquantes"
                                     value={data?.kpis.stations_missing_coordinates ?? 0}
                                     prefix={<EnvironmentOutlined />}
-                                    valueStyle={{ color: '#d4380d' }}
+                                    styles={{ content: { color: '#d4380d' } }}
                                 />
                             </Card>
                         </Col>
                     )}
                 </Row>
 
-                <Card title="Bornes" bodyStyle={{ padding: 0 }}>
+                <Card title="Bornes" styles={{ body: { padding: 0 } }}>
                     <Table
                         rowKey="id"
                         columns={columns}
