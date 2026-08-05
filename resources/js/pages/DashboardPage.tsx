@@ -13,6 +13,7 @@ import {
 } from '@ant-design/icons';
 import echo from '../echo';
 import AppShell from '../components/AppShell';
+import StationMap from '../components/StationMap';
 import { useSupervisionDashboard, SupervisionStation, SupervisionDashboard } from '../api/supervision';
 import {
     ADMIN_STATUS_LABELS,
@@ -172,6 +173,8 @@ export default function DashboardPage() {
         },
     ];
 
+    const missingCoordinatesCount = data?.kpis.stations_missing_coordinates ?? 0;
+
     return (
         <AppShell>
             <div style={{ padding: 24 }}>
@@ -244,12 +247,12 @@ export default function DashboardPage() {
                             />
                         </Card>
                     </Col>
-                    {(data?.kpis.stations_missing_coordinates ?? 0) > 0 && (
+                    {missingCoordinatesCount > 0 && (
                         <Col xs={12} sm={8} md={4}>
                             <Card loading={isLoading}>
                                 <Statistic
                                     title="Coordonnées manquantes"
-                                    value={data?.kpis.stations_missing_coordinates ?? 0}
+                                    value={missingCoordinatesCount}
                                     prefix={<EnvironmentOutlined />}
                                     styles={{ content: { color: '#d4380d' } }}
                                 />
@@ -257,6 +260,24 @@ export default function DashboardPage() {
                         </Col>
                     )}
                 </Row>
+
+                <Card
+                    title="Carte en temps réel"
+                    style={{ marginBottom: 24 }}
+                    styles={{ body: { padding: 0 } }}
+                    loading={isLoading}
+                >
+                    <StationMap stations={data?.stations ?? []} />
+                    {missingCoordinatesCount > 0 && (
+                        <div style={{ padding: '10px 16px', borderTop: '1px solid #E7EDF1', fontSize: 13, color: '#5B6F7F' }}>
+                            <WarningOutlined style={{ marginRight: 6, color: '#d4380d' }} />
+                            {missingCoordinatesCount} borne{missingCoordinatesCount > 1 ? 's' : ''} sans coordonnées
+                            {missingCoordinatesCount > 1 ? ' ne sont' : ' n\'est'} pas affichée
+                            {missingCoordinatesCount > 1 ? 's' : ''} sur la carte (toujours visible
+                            {missingCoordinatesCount > 1 ? 's' : ''} dans la liste ci-dessous).
+                        </div>
+                    )}
+                </Card>
 
                 <Card title="Bornes" styles={{ body: { padding: 0 } }}>
                     <Table
