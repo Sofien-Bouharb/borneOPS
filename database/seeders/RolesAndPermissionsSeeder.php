@@ -67,6 +67,14 @@ class RolesAndPermissionsSeeder extends Seeder
 
             // Module 4 — Real-Time Supervision
             'supervision.view',
+
+            // Module 5 — Charging Sessions
+            'charging_sessions.view',
+            'charging_sessions.create',
+            'charging_sessions.start',
+            'charging_sessions.pause',
+            'charging_sessions.end',
+            'charging_sessions.cancel',
         ];
 
         foreach ($permissions as $permissionName) {
@@ -83,6 +91,8 @@ class RolesAndPermissionsSeeder extends Seeder
                 'connectors.view', 'connectors.create', 'connectors.update', 'connectors.delete',
                 'connectors.state.update', 'connectors.availability.update',
                 'supervision.view',
+                'charging_sessions.view', 'charging_sessions.create', 'charging_sessions.start',
+                'charging_sessions.pause', 'charging_sessions.end', 'charging_sessions.cancel',
             ],
             'Exploitant' => [
                 'charging_stations.view', 'charging_stations.create', 'charging_stations.update',
@@ -93,6 +103,8 @@ class RolesAndPermissionsSeeder extends Seeder
                 'connectors.view', 'connectors.create', 'connectors.update', 'connectors.delete',
                 'connectors.state.update', 'connectors.availability.update',
                 'supervision.view',
+                'charging_sessions.view', 'charging_sessions.create', 'charging_sessions.start',
+                'charging_sessions.pause', 'charging_sessions.end', 'charging_sessions.cancel',
             ],
             'Opérateur' => [
                 'charging_stations.view',
@@ -101,6 +113,8 @@ class RolesAndPermissionsSeeder extends Seeder
                 'connectors.view',
                 'connectors.state.update',
                 'supervision.view',
+                'charging_sessions.view', 'charging_sessions.create', 'charging_sessions.start',
+                'charging_sessions.pause', 'charging_sessions.end', 'charging_sessions.cancel',
             ],
             'Technicien' => [
                 // charging_stations.state.update deliberately withheld — roadmap marks it "possibly, scoped"
@@ -112,17 +126,22 @@ class RolesAndPermissionsSeeder extends Seeder
                 'connectors.view',
                 'connectors.state.update',
                 'supervision.view',
+                // Module 5 roadmap §16: Technicien is view-only on charging sessions —
+                // no create/start/pause/end/cancel until a real scoping need is identified.
+                'charging_sessions.view',
             ],
             'Service Client' => [
                 'charging_stations.view',
                 'charging_stations.history.view',
                 'connectors.view',
                 'supervision.view',
+                'charging_sessions.view',
             ],
             'Finance' => [
                 'charging_stations.view',
                 'connectors.view',
                 'supervision.view',
+                'charging_sessions.view',
             ],
             'Client' => [
                 // No access — deferred until organization_user scoping exists (Module 6).
