@@ -14,6 +14,7 @@ import {
     LogoutOutlined,
     DownOutlined,
     SafetyCertificateOutlined,
+    PlayCircleOutlined,
 } from '@ant-design/icons';
 import { useAuth } from '../auth/AuthContext';
 
@@ -31,6 +32,7 @@ interface NavItem {
 const NAV_ITEMS: NavItem[] = [
     { key: '/dashboard', label: 'Supervision', icon: <RadarChartOutlined />, permission: 'supervision.view' },
     { key: '/stations', label: 'Bornes', icon: <ThunderboltOutlined />, permission: 'charging_stations.view' },
+    { key: '/charging-sessions', label: 'Sessions de recharge', icon: <PlayCircleOutlined />, permission: 'charging_sessions.view' },
     { key: '/organizations', label: 'Organisations', icon: <ApartmentOutlined />, permission: 'organizations.view' },
     { key: '/sites', label: 'Sites', icon: <EnvironmentOutlined />, permission: 'sites.view' },
 ];

@@ -18,6 +18,9 @@ import SiteListPage from './pages/SiteListPage';
 import SiteDetailPage from './pages/SiteDetailPage';
 import SiteCreatePage from './pages/SiteCreatePage';
 import SiteEditPage from './pages/SiteEditPage';
+import ChargingSessionListPage from './pages/ChargingSessionListPage';
+import ChargingSessionCreatePage from './pages/ChargingSessionCreatePage';
+import ChargingSessionDetailPage from './pages/ChargingSessionDetailPage';
 
 
 
@@ -84,6 +87,11 @@ function AppRoutes() {
         <Route path="/sites/new" element={<ProtectedRoute permission="sites.create"><SiteCreatePage /></ProtectedRoute>} />
         <Route path="/sites/:id" element={<ProtectedRoute permission="sites.view"><SiteDetailPage /></ProtectedRoute>} />
         <Route path="/sites/:id/edit" element={<ProtectedRoute permission="sites.update"><SiteEditPage /></ProtectedRoute>} />
+
+        {/* Module 5: Charging Sessions */}
+        <Route path="/charging-sessions" element={<ProtectedRoute permission="charging_sessions.view"><ChargingSessionListPage /></ProtectedRoute>} />
+        <Route path="/charging-sessions/new" element={<ProtectedRoute permission="charging_sessions.create"><ChargingSessionCreatePage /></ProtectedRoute>} />
+        <Route path="/charging-sessions/:id" element={<ProtectedRoute permission="charging_sessions.view"><ChargingSessionDetailPage /></ProtectedRoute>} />
 
       <Route path="/forgot-password" element={<ForgotPasswordPage />} />
       <Route path="/reset-password" element={<ResetPasswordPage />} />
