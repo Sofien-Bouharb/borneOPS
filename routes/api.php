@@ -10,6 +10,7 @@ use App\Http\Controllers\SiteController;
 use App\Http\Controllers\ChargingStationController;
 use App\Http\Controllers\ConnectorController;
 use App\Http\Controllers\SupervisionController;
+use App\Http\Controllers\ChargingSessionController;
 
 
 Route::post('/login', [AuthController::class, 'login'])
@@ -101,4 +102,22 @@ Route::middleware('auth:api')->group(function () {
         // --- Module 4: Real-Time Supervision ---
     Route::get('/supervision/dashboard', [SupervisionController::class, 'dashboard'])
         ->middleware('permission:supervision.view');
+
+        // --- Module 5: Charging Sessions ---
+    Route::get('/charging-sessions', [ChargingSessionController::class, 'index'])
+        ->middleware('permission:charging_sessions.view');
+    Route::post('/charging-sessions', [ChargingSessionController::class, 'store'])
+        ->middleware('permission:charging_sessions.create');
+    Route::get('/charging-sessions/{session}', [ChargingSessionController::class, 'show'])
+        ->middleware('permission:charging_sessions.view');
+    Route::post('/charging-sessions/{session}/start', [ChargingSessionController::class, 'start'])
+        ->middleware('permission:charging_sessions.start');
+    Route::post('/charging-sessions/{session}/pause', [ChargingSessionController::class, 'pause'])
+        ->middleware('permission:charging_sessions.pause');
+    Route::post('/charging-sessions/{session}/resume', [ChargingSessionController::class, 'resume'])
+        ->middleware('permission:charging_sessions.pause');
+    Route::post('/charging-sessions/{session}/end', [ChargingSessionController::class, 'end'])
+        ->middleware('permission:charging_sessions.end');
+    Route::post('/charging-sessions/{session}/cancel', [ChargingSessionController::class, 'cancel'])
+        ->middleware('permission:charging_sessions.cancel');
 });
