@@ -121,3 +121,13 @@ Route::middleware('auth:api')->group(function () {
     Route::post('/charging-sessions/{session}/cancel', [ChargingSessionController::class, 'cancel'])
         ->middleware('permission:charging_sessions.cancel');
 });
+
+// --- OCPP Server Integration: internal bridge ---
+// Authenticated by a shared service secret (OCPP_BRIDGE_TOKEN via the
+// ocpp_bridge middleware), never a human JWT, never Spatie permissions.
+// Only the Python OCPP gateway calls these routes.
+Route::middleware('ocpp_bridge')->prefix('internal/ocpp')->group(function () {
+    Route::get('/ping', function () {
+        return response()->json(['message' => 'OCPP bridge authenticated successfully.']);
+    });
+});

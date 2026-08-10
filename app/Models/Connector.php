@@ -30,6 +30,8 @@ class Connector extends Model
         'max_power_kw',
         'operational_status',
         'administrative_status',
+        'ocpp_evse_id',
+        'ocpp_connector_id',
     ];
 
     protected function casts(): array
@@ -37,6 +39,8 @@ class Connector extends Model
         return [
             'max_power_kw' => 'decimal:2',
             'deleted_at' => 'datetime',
+            'ocpp_evse_id' => 'integer',
+            'ocpp_connector_id' => 'integer',
         ];
     }
 

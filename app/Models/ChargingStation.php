@@ -31,6 +31,10 @@ class ChargingStation extends Model
         'site_id',
     ];
 
+    protected $hidden = [
+        'ocpp_auth_password_hash',
+    ];
+
     protected $casts = [
         'latitude' => 'decimal:7',
         'longitude' => 'decimal:7',
@@ -38,6 +42,7 @@ class ChargingStation extends Model
         'last_heartbeat_at' => 'datetime',
         'last_seen_at' => 'datetime',
         'disconnected_at' => 'datetime',
+        'ocpp_auth_updated_at' => 'datetime',
     ];
 
     public function site(): BelongsTo

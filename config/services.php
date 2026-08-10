@@ -35,4 +35,8 @@ return [
         ],
     ],
 
+    'ocpp_bridge' => [
+        'token' => env('OCPP_BRIDGE_TOKEN'),
+    ],
+
 ];
