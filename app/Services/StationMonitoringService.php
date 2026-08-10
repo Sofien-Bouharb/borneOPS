@@ -46,6 +46,36 @@ class StationMonitoringService
     }
 
     /**
+     * Record that meaningful, non-heartbeat OCPP traffic was received from a
+     * station — BootNotification, Authorize, StartTransaction, MeterValues,
+     * StopTransaction, and similar messages. Updates last_seen_at only.
+     *
+     * This method deliberately never touches last_heartbeat_at or
+     * disconnected_at. connection_status stays derived solely from
+     * last_heartbeat_at freshness, and recordHeartbeat() remains the only
+     * method that ever clears disconnected_at — this keeps "is the station
+     * sending OCPP traffic at all" (last_seen_at) and "is the station within
+     * its heartbeat contract" (connection_status) as two independent signals.
+     */
+    public function recordSeen(ChargingStation $station): ChargingStation
+    {
+        if ($station->trashed()) {
+            throw new InvalidStateTransitionException(
+                'Une borne supprimée ne peut pas recevoir de trafic OCPP.'
+            );
+        }
+
+        DB::transaction(function () use ($station) {
+            $station->last_seen_at = now();
+            $station->save();
+        });
+
+        $this->broadcastStation($station);
+
+        return $station;
+    }
+
+    /**
      * Derive a station's current connection status from last_heartbeat_at.
      *
      * This is the single source of truth for connection status. It is never

@@ -11,6 +11,7 @@ use App\Http\Controllers\ChargingStationController;
 use App\Http\Controllers\ConnectorController;
 use App\Http\Controllers\SupervisionController;
 use App\Http\Controllers\ChargingSessionController;
+use App\Http\Controllers\Ocpp\OcppBridgeController;
 
 
 Route::post('/login', [AuthController::class, 'login'])
@@ -130,4 +131,8 @@ Route::middleware('ocpp_bridge')->prefix('internal/ocpp')->group(function () {
     Route::get('/ping', function () {
         return response()->json(['message' => 'OCPP bridge authenticated successfully.']);
     });
+
+    Route::post('/events/heartbeat', [OcppBridgeController::class, 'heartbeat']);
+    Route::post('/events/boot-notification', [OcppBridgeController::class, 'bootNotification']);
+    Route::post('/events/status-notification', [OcppBridgeController::class, 'statusNotification']);
 });
