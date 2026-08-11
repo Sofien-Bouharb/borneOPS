@@ -46,17 +46,16 @@ class OcppBridgeTransactionTest extends TestCase
         $response = $this->postJson('/api/internal/ocpp/transactions/start', [
             'ocpp_identifier' => 'CP-START-001',
             'connector_number' => 1,
-            'ocpp_transaction_id' => 'TXN-001',
             'meter_start_wh' => 5000,
         ], $this->bridgeHeaders());
 
         $response->assertStatus(200);
-        $response->assertJsonStructure(['message', 'session_id']);
+        $response->assertJsonStructure(['message', 'session_id', 'ocpp_transaction_id']);
 
         $session = ChargingSession::find($response->json('session_id'));
         $this->assertSame('active', $session->status);
         $this->assertNull($session->customer_user_id);
-        $this->assertSame('TXN-001', $session->ocpp_transaction_id);
+        $this->assertSame((string) $session->id, $session->ocpp_transaction_id);
         $this->assertSame(5000, $session->meter_start_wh);
     }
 
@@ -74,7 +73,6 @@ class OcppBridgeTransactionTest extends TestCase
         $response = $this->postJson('/api/internal/ocpp/transactions/start', [
             'ocpp_identifier' => 'CP-START-002',
             'connector_number' => 1,
-            'ocpp_transaction_id' => 'TXN-002',
             'meter_start_wh' => 7000,
         ], $this->bridgeHeaders());
 
@@ -83,34 +81,32 @@ class OcppBridgeTransactionTest extends TestCase
 
         $pending->refresh();
         $this->assertSame('active', $pending->status);
-        $this->assertSame('TXN-002', $pending->ocpp_transaction_id);
+        $this->assertSame((string) $pending->id, $pending->ocpp_transaction_id);
     }
 
-    public function test_start_transaction_is_idempotent_for_retried_transaction_id(): void
+    public function test_start_transaction_is_idempotent_for_retried_start_on_same_connector(): void
     {
         [$station, $connector] = $this->createEligibleStationAndConnector('CP-START-003');
 
         $first = $this->postJson('/api/internal/ocpp/transactions/start', [
             'ocpp_identifier' => 'CP-START-003',
             'connector_number' => 1,
-            'ocpp_transaction_id' => 'TXN-003',
             'meter_start_wh' => 1000,
         ], $this->bridgeHeaders());
 
         $second = $this->postJson('/api/internal/ocpp/transactions/start', [
             'ocpp_identifier' => 'CP-START-003',
             'connector_number' => 1,
-            'ocpp_transaction_id' => 'TXN-003',
             'meter_start_wh' => 1000,
         ], $this->bridgeHeaders());
 
         $first->assertStatus(200);
         $second->assertStatus(200);
         $this->assertSame($first->json('session_id'), $second->json('session_id'));
-        $this->assertSame(1, ChargingSession::where('ocpp_transaction_id', 'TXN-003')->count());
+        $this->assertSame(1, ChargingSession::where('connector_id', $connector->id)->where('status', 'active')->count());
     }
 
-    public function test_start_transaction_rejects_when_connector_already_occupied(): void
+    public function test_start_transaction_rejects_when_connector_already_occupied_by_a_foreign_open_session(): void
     {
         [$station, $connector] = $this->createEligibleStationAndConnector('CP-START-004');
 
@@ -120,7 +116,6 @@ class OcppBridgeTransactionTest extends TestCase
         $response = $this->postJson('/api/internal/ocpp/transactions/start', [
             'ocpp_identifier' => 'CP-START-004',
             'connector_number' => 1,
-            'ocpp_transaction_id' => 'TXN-004',
             'meter_start_wh' => 1000,
         ], $this->bridgeHeaders());
 
@@ -132,7 +127,6 @@ class OcppBridgeTransactionTest extends TestCase
         $response = $this->postJson('/api/internal/ocpp/transactions/start', [
             'ocpp_identifier' => 'CP-DOES-NOT-EXIST',
             'connector_number' => 1,
-            'ocpp_transaction_id' => 'TXN-005',
             'meter_start_wh' => 1000,
         ], $this->bridgeHeaders());
 
@@ -146,7 +140,6 @@ class OcppBridgeTransactionTest extends TestCase
         $response = $this->postJson('/api/internal/ocpp/transactions/start', [
             'ocpp_identifier' => 'CP-START-005',
             'connector_number' => 999,
-            'ocpp_transaction_id' => 'TXN-006',
             'meter_start_wh' => 1000,
         ], $this->bridgeHeaders());
 
@@ -158,7 +151,7 @@ class OcppBridgeTransactionTest extends TestCase
         $response = $this->postJson('/api/internal/ocpp/transactions/start', [], $this->bridgeHeaders());
 
         $response->assertStatus(422);
-        $response->assertJsonValidationErrors(['ocpp_identifier', 'connector_number', 'ocpp_transaction_id', 'meter_start_wh']);
+        $response->assertJsonValidationErrors(['ocpp_identifier', 'connector_number', 'meter_start_wh']);
     }
 
     public function test_start_transaction_rejects_requests_without_bridge_token(): void
@@ -166,7 +159,6 @@ class OcppBridgeTransactionTest extends TestCase
         $response = $this->postJson('/api/internal/ocpp/transactions/start', [
             'ocpp_identifier' => 'CP-START-006',
             'connector_number' => 1,
-            'ocpp_transaction_id' => 'TXN-007',
             'meter_start_wh' => 1000,
         ]);
 

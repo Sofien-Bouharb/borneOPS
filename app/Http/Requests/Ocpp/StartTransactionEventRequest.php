@@ -16,7 +16,6 @@ class StartTransactionEventRequest extends FormRequest
         return [
             'ocpp_identifier' => ['required', 'string'],
             'connector_number' => ['required', 'integer', 'min:1'],
-            'ocpp_transaction_id' => ['required', 'string'],
             'meter_start_wh' => ['required', 'integer', 'min:0'],
         ];
     }

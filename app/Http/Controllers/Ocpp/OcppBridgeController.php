@@ -88,7 +88,7 @@ class OcppBridgeController extends Controller
         return response()->json(['message' => 'Station status notification recorded.']);
     }
 
-    public function startTransaction(StartTransactionEventRequest $request): JsonResponse
+public function startTransaction(StartTransactionEventRequest $request): JsonResponse
     {
         $validated = $request->validated();
 
@@ -113,13 +113,13 @@ class OcppBridgeController extends Controller
         $session = $this->sessionService->bindOcppTransactionId(
             $station,
             $connector,
-            $validated['ocpp_transaction_id'],
             $validated['meter_start_wh'],
         );
 
         return response()->json([
             'message' => 'Transaction started.',
             'session_id' => $session->id,
+            'ocpp_transaction_id' => $session->ocpp_transaction_id,
         ]);
     }
 }

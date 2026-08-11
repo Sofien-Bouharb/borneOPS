@@ -162,34 +162,40 @@ public function start(
 
 
 /**
-     * Bind an OCPP transaction to a BorneOPS session, starting it in the
-     * process. Three cases per the frozen OCPP Integration Roadmap v1.1:
+     * Bind an OCPP 1.6 transaction to a BorneOPS session, starting it in the
+     * process. Per the frozen OCPP Integration Roadmap v1.1:
      *
-     * 1. Idempotency (§17): a session on this station already carries this
-     *    exact ocpp_transaction_id and is active — this is a retried
-     *    StartTransaction. Return the existing session unchanged.
-     * 2. A pending BorneOPS-initiated session already exists on this
-     *    connector — start it and bind the transaction ID to it.
-     * 3. No pending session exists (amendment #10 — unsolicited session):
-     *    create a new session with customer_user_id = null, source = 'ocpp',
-     *    then start it immediately with the transaction ID bound.
+     * OCPP 1.6's StartTransaction carries no transactionId from the charger
+     * — the CSMS (this application) assigns one and returns it in the
+     * response. Decision #9 fixes that assigned value to be the
+     * ChargingSession's own id, so no separate id-generation scheme is
+     * needed; the gateway simply relays session_id back to the charger as
+     * the OCPP transactionId.
+     *
+     * Idempotency (§17): if the connector already has an active session,
+     * this is treated as a retried StartTransaction and that session is
+     * returned unchanged — the charger has no prior transactionId to send
+     * back to us for a retried Start, so "already active on this connector"
+     * is the only signal available to detect the retry.
+     *
+     * Amendment #10 (unsolicited sessions): if no pending BorneOPS session
+     * exists on the connector, one is created here with
+     * customer_user_id = null, source = 'ocpp'.
      *
      * @throws InvalidStateTransitionException
      */
     public function bindOcppTransactionId(
         ChargingStation $station,
         Connector $connector,
-        string $ocppTransactionId,
         int $meterStartWh,
         ?\Carbon\CarbonInterface $occurredAt = null
     ): ChargingSession {
-        $existing = ChargingSession::where('charging_station_id', $station->id)
-            ->where('ocpp_transaction_id', $ocppTransactionId)
+        $activeExisting = ChargingSession::where('connector_id', $connector->id)
             ->where('status', 'active')
             ->first();
 
-        if ($existing !== null) {
-            return $existing;
+        if ($activeExisting !== null) {
+            return $activeExisting;
         }
 
         $pending = ChargingSession::where('connector_id', $connector->id)
@@ -204,7 +210,12 @@ public function start(
             ], null, 'ocpp');
         }
 
-        return $this->start($pending, $meterStartWh, null, 'ocpp', $ocppTransactionId, $occurredAt);
+        $session = $this->start($pending, $meterStartWh, null, 'ocpp', null, $occurredAt);
+
+        $session->ocpp_transaction_id = (string) $session->id;
+        $session->save();
+
+        return $session;
     }
 
 
