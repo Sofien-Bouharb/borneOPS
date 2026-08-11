@@ -220,7 +220,52 @@ public function start(
 
 
 
+/**
+     * Bind an OCPP 2.0.1 transaction to a BorneOPS session, starting it in
+     * the process. Unlike OCPP 1.6, where the CSMS assigns the transaction
+     * ID, OCPP 2.0.1's TransactionEvent (Started) carries a transaction ID
+     * the CHARGER itself generated — we store it as-is rather than
+     * self-assigning session.id, per decision #9's "separate adapter"
+     * split.
+     *
+     * Idempotency: if a session already exists for this exact transaction
+     * ID on this station (any status), it is returned unchanged — this
+     * covers a retried Started event.
+     *
+     * Amendment #10 (unsolicited sessions) applies identically to this
+     * pathway: if no pending BorneOPS session exists, one is created here.
+     *
+     * @throws InvalidStateTransitionException
+     */
+    public function bindExternalTransactionId(
+        ChargingStation $station,
+        Connector $connector,
+        string $externalTransactionId,
+        int $meterStartWh,
+        ?\Carbon\CarbonInterface $occurredAt = null
+    ): ChargingSession {
+        $existing = ChargingSession::where('charging_station_id', $station->id)
+            ->where('ocpp_transaction_id', $externalTransactionId)
+            ->first();
 
+        if ($existing !== null) {
+            return $existing;
+        }
+
+        $pending = ChargingSession::where('connector_id', $connector->id)
+            ->where('status', 'pending')
+            ->first();
+
+        if ($pending === null) {
+            $pending = $this->create([
+                'charging_station_id' => $station->id,
+                'connector_id' => $connector->id,
+                'customer_user_id' => null,
+            ], null, 'ocpp');
+        }
+
+        return $this->start($pending, $meterStartWh, null, 'ocpp', $externalTransactionId, $occurredAt);
+    }
 
 
 

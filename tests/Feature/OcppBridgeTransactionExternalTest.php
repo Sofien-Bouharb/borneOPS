@@ -1,0 +1,153 @@
+<?php
+
+namespace Tests\Feature;
+
+use App\Models\ChargingSession;
+use App\Models\ChargingStation;
+use App\Models\Connector;
+use Illuminate\Foundation\Testing\RefreshDatabase;
+use Tests\TestCase;
+
+class OcppBridgeTransactionExternalTest extends TestCase
+{
+    use RefreshDatabase;
+
+    protected function bridgeHeaders(): array
+    {
+        return [
+            'X-OCPP-Bridge-Token' => config('services.ocpp_bridge.token'),
+        ];
+    }
+
+    protected function createEligibleStationAndConnector(string $ocppIdentifier): array
+    {
+        $station = ChargingStation::factory()->create([
+            'ocpp_identifier' => $ocppIdentifier,
+            'administrative_status' => 'active',
+            'operational_status' => 'available',
+            'last_heartbeat_at' => now(),
+            'disconnected_at' => null,
+        ]);
+
+        $connector = Connector::factory()->create([
+            'charging_station_id' => $station->id,
+            'connector_number' => 1,
+            'administrative_status' => 'enabled',
+            'operational_status' => 'available',
+        ]);
+
+        return [$station, $connector];
+    }
+
+    public function test_start_transaction_external_preserves_charger_assigned_id(): void
+    {
+        [$station, $connector] = $this->createEligibleStationAndConnector('CP201-001');
+
+        $response = $this->postJson('/api/internal/ocpp/transactions/start-external', [
+            'ocpp_identifier' => 'CP201-001',
+            'connector_number' => 1,
+            'external_transaction_id' => 'CHARGER-TXN-XYZ',
+            'meter_start_wh' => 2000,
+        ], $this->bridgeHeaders());
+
+        $response->assertStatus(200);
+        $response->assertJson(['ocpp_transaction_id' => 'CHARGER-TXN-XYZ']);
+
+        $session = ChargingSession::find($response->json('session_id'));
+        $this->assertSame('active', $session->status);
+        $this->assertSame('CHARGER-TXN-XYZ', $session->ocpp_transaction_id);
+        $this->assertNull($session->customer_user_id);
+    }
+
+    public function test_start_transaction_external_binds_to_existing_pending_session(): void
+    {
+        [$station, $connector] = $this->createEligibleStationAndConnector('CP201-002');
+
+        $pending = ChargingSession::factory()->create([
+            'charging_station_id' => $station->id,
+            'connector_id' => $connector->id,
+            'customer_user_id' => null,
+            'status' => 'pending',
+        ]);
+
+        $response = $this->postJson('/api/internal/ocpp/transactions/start-external', [
+            'ocpp_identifier' => 'CP201-002',
+            'connector_number' => 1,
+            'external_transaction_id' => 'CHARGER-TXN-ABC',
+            'meter_start_wh' => 1000,
+        ], $this->bridgeHeaders());
+
+        $response->assertStatus(200);
+        $this->assertSame($pending->id, $response->json('session_id'));
+    }
+
+    public function test_start_transaction_external_is_idempotent_for_retried_transaction_id(): void
+    {
+        [$station, $connector] = $this->createEligibleStationAndConnector('CP201-003');
+
+        $first = $this->postJson('/api/internal/ocpp/transactions/start-external', [
+            'ocpp_identifier' => 'CP201-003',
+            'connector_number' => 1,
+            'external_transaction_id' => 'CHARGER-TXN-REPEAT',
+            'meter_start_wh' => 1000,
+        ], $this->bridgeHeaders());
+
+        $second = $this->postJson('/api/internal/ocpp/transactions/start-external', [
+            'ocpp_identifier' => 'CP201-003',
+            'connector_number' => 1,
+            'external_transaction_id' => 'CHARGER-TXN-REPEAT',
+            'meter_start_wh' => 1000,
+        ], $this->bridgeHeaders());
+
+        $first->assertStatus(200);
+        $second->assertStatus(200);
+        $this->assertSame($first->json('session_id'), $second->json('session_id'));
+        $this->assertSame(1, ChargingSession::where('ocpp_transaction_id', 'CHARGER-TXN-REPEAT')->count());
+    }
+
+    public function test_start_transaction_external_for_unknown_station_returns_404(): void
+    {
+        $response = $this->postJson('/api/internal/ocpp/transactions/start-external', [
+            'ocpp_identifier' => 'CP201-DOES-NOT-EXIST',
+            'connector_number' => 1,
+            'external_transaction_id' => 'CHARGER-TXN-1',
+            'meter_start_wh' => 1000,
+        ], $this->bridgeHeaders());
+
+        $response->assertStatus(404);
+    }
+
+    public function test_start_transaction_external_for_unknown_connector_returns_404(): void
+    {
+        [$station, $connector] = $this->createEligibleStationAndConnector('CP201-004');
+
+        $response = $this->postJson('/api/internal/ocpp/transactions/start-external', [
+            'ocpp_identifier' => 'CP201-004',
+            'connector_number' => 999,
+            'external_transaction_id' => 'CHARGER-TXN-2',
+            'meter_start_wh' => 1000,
+        ], $this->bridgeHeaders());
+
+        $response->assertStatus(404);
+    }
+
+    public function test_start_transaction_external_requires_all_fields(): void
+    {
+        $response = $this->postJson('/api/internal/ocpp/transactions/start-external', [], $this->bridgeHeaders());
+
+        $response->assertStatus(422);
+        $response->assertJsonValidationErrors(['ocpp_identifier', 'connector_number', 'external_transaction_id', 'meter_start_wh']);
+    }
+
+    public function test_start_transaction_external_rejects_requests_without_bridge_token(): void
+    {
+        $response = $this->postJson('/api/internal/ocpp/transactions/start-external', [
+            'ocpp_identifier' => 'CP201-005',
+            'connector_number' => 1,
+            'external_transaction_id' => 'CHARGER-TXN-3',
+            'meter_start_wh' => 1000,
+        ]);
+
+        $response->assertStatus(401);
+    }
+}

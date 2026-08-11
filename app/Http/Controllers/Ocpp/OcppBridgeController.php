@@ -14,6 +14,7 @@ use App\Services\StationMonitoringService;
 use Illuminate\Http\JsonResponse;
 use App\Http\Requests\Ocpp\MeterValuesEventRequest;
 use App\Http\Requests\Ocpp\StopTransactionEventRequest;
+use App\Http\Requests\Ocpp\StartTransactionExternalEventRequest;
 
 
 class OcppBridgeController extends Controller
@@ -205,6 +206,46 @@ public function stopTransaction(StopTransactionEventRequest $request): JsonRespo
             'session_id' => $session->id,
         ]);
     }
+
+
+
+public function startTransactionExternal(StartTransactionExternalEventRequest $request): JsonResponse
+    {
+        $validated = $request->validated();
+
+        $station = ChargingStation::where('ocpp_identifier', $validated['ocpp_identifier'])->first();
+
+        if ($station === null) {
+            return response()->json([
+                'message' => "No station found with ocpp_identifier '{$validated['ocpp_identifier']}'.",
+            ], 404);
+        }
+
+        $connector = Connector::where('charging_station_id', $station->id)
+            ->where('connector_number', $validated['connector_number'])
+            ->first();
+
+        if ($connector === null) {
+            return response()->json([
+                'message' => "No connector number {$validated['connector_number']} found on station '{$validated['ocpp_identifier']}'.",
+            ], 404);
+        }
+
+        $session = $this->sessionService->bindExternalTransactionId(
+            $station,
+            $connector,
+            $validated['external_transaction_id'],
+            $validated['meter_start_wh'],
+        );
+
+        return response()->json([
+            'message' => 'Transaction started.',
+            'session_id' => $session->id,
+            'ocpp_transaction_id' => $session->ocpp_transaction_id,
+        ]);
+    }
+
+
 
 
 }

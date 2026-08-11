@@ -138,4 +138,5 @@ Route::middleware('ocpp_bridge')->prefix('internal/ocpp')->group(function () {
     Route::post('/transactions/start', [OcppBridgeController::class, 'startTransaction']);
     Route::post('/transactions/meter-values', [OcppBridgeController::class, 'meterValues']);
     Route::post('/transactions/stop', [OcppBridgeController::class, 'stopTransaction']);
+    Route::post('/transactions/start-external', [OcppBridgeController::class, 'startTransactionExternal']);
 });
