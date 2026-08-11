@@ -10,6 +10,7 @@ from ocpp.v16.enums import AuthorizationStatus, RegistrationStatus
 from app import bridge_client
 from app.authorization import TestAuthorizationProvider
 from app.bridge_client import BridgeClientError
+from app.meter_values import extract_energy_wh
 
 logger = logging.getLogger("ocpp-gateway")
 
@@ -92,6 +93,29 @@ class BorneOpsChargePoint16(ChargePoint16):
             transaction_id=transaction_id,
             id_tag_info=IdTagInfo(status=AuthorizationStatus.accepted.value),
         )
+
+    @on("MeterValues")
+    async def on_meter_values(self, connector_id, meter_value, transaction_id=None, **kwargs):
+        if transaction_id is None:
+            logger.info(f"MeterValues with no transaction_id on {self.id}, ignoring.")
+            return call_result.MeterValues()
+
+        energy_wh = extract_energy_wh(meter_value)
+
+        if energy_wh is None:
+            logger.info(f"MeterValues with no usable energy reading on {self.id}, ignoring.")
+            return call_result.MeterValues()
+
+        try:
+            await bridge_client.send_meter_values(
+                self.id,
+                str(transaction_id),
+                energy_wh,
+            )
+        except BridgeClientError as e:
+            logger.warning(f"MeterValues bridge call failed for {self.id}: {e}")
+
+        return call_result.MeterValues()
 
 
 def _map_ocpp_status(ocpp_status: str) -> str:

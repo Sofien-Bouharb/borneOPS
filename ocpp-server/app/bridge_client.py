@@ -56,6 +56,18 @@ async def send_start_transaction(
     })
 
 
+async def send_meter_values(
+    ocpp_identifier: str,
+    ocpp_transaction_id: str,
+    meter_value_wh: int,
+) -> dict:
+    return await _post("/api/internal/ocpp/transactions/meter-values", {
+        "ocpp_identifier": ocpp_identifier,
+        "ocpp_transaction_id": ocpp_transaction_id,
+        "meter_value_wh": meter_value_wh,
+    })
+
+
 async def _post(path: str, payload: dict) -> dict:
     url = f"{LARAVEL_BASE_URL}{path}"
 

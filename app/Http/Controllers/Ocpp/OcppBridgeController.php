@@ -12,6 +12,8 @@ use App\Models\Connector;
 use App\Services\ChargingSessionService;
 use App\Services\StationMonitoringService;
 use Illuminate\Http\JsonResponse;
+use App\Http\Requests\Ocpp\MeterValuesEventRequest;
+
 
 class OcppBridgeController extends Controller
 {
@@ -122,4 +124,33 @@ public function startTransaction(StartTransactionEventRequest $request): JsonRes
             'ocpp_transaction_id' => $session->ocpp_transaction_id,
         ]);
     }
+
+
+public function meterValues(MeterValuesEventRequest $request): JsonResponse
+    {
+        $validated = $request->validated();
+
+        $station = ChargingStation::where('ocpp_identifier', $validated['ocpp_identifier'])->first();
+
+        if ($station === null) {
+            return response()->json([
+                'message' => "No station found with ocpp_identifier '{$validated['ocpp_identifier']}'.",
+            ], 404);
+        }
+
+        $session = \App\Models\ChargingSession::where('charging_station_id', $station->id)
+            ->where('ocpp_transaction_id', $validated['ocpp_transaction_id'])
+            ->first();
+
+        if ($session === null) {
+            return response()->json([
+                'message' => "No session found for transaction '{$validated['ocpp_transaction_id']}' on station '{$validated['ocpp_identifier']}'.",
+            ], 404);
+        }
+
+        $this->sessionService->recordMeterValue($session, $validated['meter_value_wh']);
+
+        return response()->json(['message' => 'Meter value recorded.']);
+    }
+
 }

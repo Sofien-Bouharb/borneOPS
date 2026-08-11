@@ -136,4 +136,5 @@ Route::middleware('ocpp_bridge')->prefix('internal/ocpp')->group(function () {
     Route::post('/events/boot-notification', [OcppBridgeController::class, 'bootNotification']);
     Route::post('/events/status-notification', [OcppBridgeController::class, 'statusNotification']);
     Route::post('/transactions/start', [OcppBridgeController::class, 'startTransaction']);
+    Route::post('/transactions/meter-values', [OcppBridgeController::class, 'meterValues']);
 });
