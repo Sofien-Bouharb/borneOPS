@@ -12,6 +12,7 @@ use App\Http\Controllers\ConnectorController;
 use App\Http\Controllers\SupervisionController;
 use App\Http\Controllers\ChargingSessionController;
 use App\Http\Controllers\Ocpp\OcppBridgeController;
+use App\Http\Controllers\ChargingStationRemoteControlController;
 
 
 Route::post('/login', [AuthController::class, 'login'])
@@ -121,6 +122,17 @@ Route::middleware('auth:api')->group(function () {
         ->middleware('permission:charging_sessions.end');
     Route::post('/charging-sessions/{session}/cancel', [ChargingSessionController::class, 'cancel'])
         ->middleware('permission:charging_sessions.cancel');
+// --- OCPP Remote Control ---
+    Route::post('/charging-stations/{station}/remote-start', [ChargingStationRemoteControlController::class, 'remoteStart'])
+        ->middleware('permission:charging_stations.remote_control');
+    Route::post('/charging-stations/{station}/charging-sessions/{session}/remote-stop', [ChargingStationRemoteControlController::class, 'remoteStop'])
+        ->middleware('permission:charging_stations.remote_control');
+    Route::post('/charging-stations/{station}/reset', [ChargingStationRemoteControlController::class, 'reset'])
+        ->middleware('permission:charging_stations.remote_control');
+    Route::post('/charging-stations/{station}/connectors/{connector}/unlock', [ChargingStationRemoteControlController::class, 'unlockConnector'])
+        ->middleware('permission:charging_stations.remote_control');
+
+
 });
 
 // --- OCPP Server Integration: internal bridge ---
