@@ -11,6 +11,7 @@ from app import bridge_client
 from app.authorization import TestAuthorizationProvider
 from app.bridge_client import BridgeClientError
 from app.meter_values import extract_energy_wh
+from app.stop_reason import map_stop_reason
 
 logger = logging.getLogger("ocpp-gateway")
 
@@ -116,6 +117,22 @@ class BorneOpsChargePoint16(ChargePoint16):
             logger.warning(f"MeterValues bridge call failed for {self.id}: {e}")
 
         return call_result.MeterValues()
+
+    @on("StopTransaction")
+    async def on_stop_transaction(self, meter_stop, timestamp, transaction_id, reason=None, **kwargs):
+        reason_code = map_stop_reason(reason)
+
+        try:
+            await bridge_client.send_stop_transaction(
+                self.id,
+                str(transaction_id),
+                meter_stop,
+                reason_code,
+            )
+        except BridgeClientError as e:
+            logger.warning(f"StopTransaction bridge call failed for {self.id}: {e}")
+
+        return call_result.StopTransaction()
 
 
 def _map_ocpp_status(ocpp_status: str) -> str:

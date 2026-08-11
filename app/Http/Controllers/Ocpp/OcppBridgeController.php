@@ -13,6 +13,7 @@ use App\Services\ChargingSessionService;
 use App\Services\StationMonitoringService;
 use Illuminate\Http\JsonResponse;
 use App\Http\Requests\Ocpp\MeterValuesEventRequest;
+use App\Http\Requests\Ocpp\StopTransactionEventRequest;
 
 
 class OcppBridgeController extends Controller
@@ -152,5 +153,58 @@ public function meterValues(MeterValuesEventRequest $request): JsonResponse
 
         return response()->json(['message' => 'Meter value recorded.']);
     }
+
+
+public function stopTransaction(StopTransactionEventRequest $request): JsonResponse
+    {
+        $validated = $request->validated();
+
+        $station = ChargingStation::where('ocpp_identifier', $validated['ocpp_identifier'])->first();
+
+        if ($station === null) {
+            return response()->json([
+                'message' => "No station found with ocpp_identifier '{$validated['ocpp_identifier']}'.",
+            ], 404);
+        }
+
+        $session = \App\Models\ChargingSession::where('charging_station_id', $station->id)
+            ->where('ocpp_transaction_id', $validated['ocpp_transaction_id'])
+            ->first();
+
+        if ($session === null) {
+            \Illuminate\Support\Facades\Log::warning('orphan_stop_transaction', [
+                'ocpp_identifier' => $validated['ocpp_identifier'],
+                'ocpp_transaction_id' => $validated['ocpp_transaction_id'],
+                'meter_stop_wh' => $validated['meter_stop_wh'],
+                'reason_code' => $validated['reason_code'],
+            ]);
+
+            return response()->json([
+                'message' => 'No matching session found for this transaction. Acknowledged, no action taken.',
+            ]);
+        }
+
+        if ($session->status === 'completed') {
+            return response()->json([
+                'message' => 'Transaction already completed.',
+                'session_id' => $session->id,
+            ]);
+        }
+
+        $session = $this->sessionService->complete(
+            $session,
+            $validated['meter_stop_wh'],
+            $validated['reason_code'],
+            null,
+            null,
+            'ocpp',
+        );
+
+        return response()->json([
+            'message' => 'Transaction stopped.',
+            'session_id' => $session->id,
+        ]);
+    }
+
 
 }
