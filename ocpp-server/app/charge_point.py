@@ -4,9 +4,11 @@ from datetime import datetime, timezone
 from ocpp.routing import on
 from ocpp.v16 import ChargePoint as ChargePoint16
 from ocpp.v16 import call_result
-from ocpp.v16.enums import RegistrationStatus
+from ocpp.v16.datatypes import IdTagInfo
+from ocpp.v16.enums import AuthorizationStatus, RegistrationStatus
 
 from app import bridge_client
+from app.authorization import TestAuthorizationProvider
 from app.bridge_client import BridgeClientError
 
 logger = logging.getLogger("ocpp-gateway")
@@ -17,6 +19,10 @@ def _now_iso() -> str:
 
 
 class BorneOpsChargePoint16(ChargePoint16):
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.authorization_provider = TestAuthorizationProvider()
+
     @on("BootNotification")
     async def on_boot_notification(self, charge_point_vendor, charge_point_model, **kwargs):
         try:
@@ -54,6 +60,16 @@ class BorneOpsChargePoint16(ChargePoint16):
             logger.warning(f"StatusNotification bridge call failed for {self.id}: {e}")
 
         return call_result.StatusNotification()
+
+    @on("Authorize")
+    async def on_authorize(self, id_tag, **kwargs):
+        if self.authorization_provider.is_authorized(id_tag):
+            status = AuthorizationStatus.accepted.value
+        else:
+            status = AuthorizationStatus.invalid.value
+            logger.info(f"Authorization rejected for idTag '{id_tag}' on {self.id}")
+
+        return call_result.Authorize(id_tag_info=IdTagInfo(status=status))
 
 
 def _map_ocpp_status(ocpp_status: str) -> str:

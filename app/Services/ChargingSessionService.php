@@ -108,30 +108,34 @@ class ChargingSessionService
      *
      * @throws InvalidStateTransitionException
      */
-    public function start(ChargingSession $session, int $meterStartWh, ?User $performedBy, string $source = 'user'): ChargingSession
+public function start(
+        ChargingSession $session,
+        int $meterStartWh,
+        ?User $performedBy,
+        string $source = 'user',
+        ?string $ocppTransactionId = null,
+        ?\Carbon\CarbonInterface $occurredAt = null
+    ): ChargingSession
     {
-        $session = DB::transaction(function () use ($session, $meterStartWh, $performedBy, $source) {
+        $session = DB::transaction(function () use ($session, $meterStartWh, $performedBy, $source, $ocppTransactionId, $occurredAt) {
             $locked = ChargingSession::lockForUpdate()->find($session->id);
-
             if ($locked->status !== 'pending') {
                 throw new InvalidStateTransitionException(
                     "Impossible de démarrer une session dans l'état '{$locked->status}'. Seule une session 'pending' peut être démarrée."
                 );
             }
-
             $station = ChargingStation::find($locked->charging_station_id);
             $connector = Connector::find($locked->connector_id);
-
             $this->assertEligible($station, $connector, $locked->id);
-
             $oldStatus = $locked->status;
-
             $locked->status = 'active';
             $locked->meter_start_wh = $meterStartWh;
             $locked->latest_meter_wh = $meterStartWh;
-            $locked->started_at = now();
+            $locked->started_at = $occurredAt ?? now();
+            if ($ocppTransactionId !== null) {
+                $locked->ocpp_transaction_id = $ocppTransactionId;
+            }
             $locked->save();
-
             ChargingSessionEvent::create([
                 'charging_session_id' => $locked->id,
                 'event_type' => 'started',
@@ -141,9 +145,7 @@ class ChargingSessionService
                 'source' => $source,
                 'performed_by' => $performedBy?->id,
             ]);
-
             $this->connectorService->updateOperationalStatus($connector, 'occupied');
-
             $this->chargingStationService->updateOperationalStatus(
                 $station,
                 'occupied',
@@ -152,14 +154,65 @@ class ChargingSessionService
                 $performedBy,
                 'system'
             );
-
             return $locked;
         });
-
         $this->broadcastSession($session);
-
         return $session;
     }
+
+
+/**
+     * Bind an OCPP transaction to a BorneOPS session, starting it in the
+     * process. Three cases per the frozen OCPP Integration Roadmap v1.1:
+     *
+     * 1. Idempotency (§17): a session on this station already carries this
+     *    exact ocpp_transaction_id and is active — this is a retried
+     *    StartTransaction. Return the existing session unchanged.
+     * 2. A pending BorneOPS-initiated session already exists on this
+     *    connector — start it and bind the transaction ID to it.
+     * 3. No pending session exists (amendment #10 — unsolicited session):
+     *    create a new session with customer_user_id = null, source = 'ocpp',
+     *    then start it immediately with the transaction ID bound.
+     *
+     * @throws InvalidStateTransitionException
+     */
+    public function bindOcppTransactionId(
+        ChargingStation $station,
+        Connector $connector,
+        string $ocppTransactionId,
+        int $meterStartWh,
+        ?\Carbon\CarbonInterface $occurredAt = null
+    ): ChargingSession {
+        $existing = ChargingSession::where('charging_station_id', $station->id)
+            ->where('ocpp_transaction_id', $ocppTransactionId)
+            ->where('status', 'active')
+            ->first();
+
+        if ($existing !== null) {
+            return $existing;
+        }
+
+        $pending = ChargingSession::where('connector_id', $connector->id)
+            ->where('status', 'pending')
+            ->first();
+
+        if ($pending === null) {
+            $pending = $this->create([
+                'charging_station_id' => $station->id,
+                'connector_id' => $connector->id,
+                'customer_user_id' => null,
+            ], null, 'ocpp');
+        }
+
+        return $this->start($pending, $meterStartWh, null, 'ocpp', $ocppTransactionId, $occurredAt);
+    }
+
+
+
+
+
+
+
 
     /**
      * Pause an active session. Does not touch connector/station status —
