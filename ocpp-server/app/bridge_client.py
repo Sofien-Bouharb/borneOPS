@@ -44,6 +44,18 @@ async def send_status_notification(
     return await _post("/api/internal/ocpp/events/status-notification", payload)
 
 
+async def send_start_transaction(
+    ocpp_identifier: str,
+    connector_number: int,
+    meter_start_wh: int,
+) -> dict:
+    return await _post("/api/internal/ocpp/transactions/start", {
+        "ocpp_identifier": ocpp_identifier,
+        "connector_number": connector_number,
+        "meter_start_wh": meter_start_wh,
+    })
+
+
 async def _post(path: str, payload: dict) -> dict:
     url = f"{LARAVEL_BASE_URL}{path}"
 

@@ -71,6 +71,28 @@ class BorneOpsChargePoint16(ChargePoint16):
 
         return call_result.Authorize(id_tag_info=IdTagInfo(status=status))
 
+    @on("StartTransaction")
+    async def on_start_transaction(self, connector_id, id_tag, meter_start, timestamp, **kwargs):
+        try:
+            result = await bridge_client.send_start_transaction(
+                self.id,
+                connector_id,
+                meter_start,
+            )
+        except BridgeClientError as e:
+            logger.warning(f"StartTransaction bridge call failed for {self.id}: {e}")
+            return call_result.StartTransaction(
+                transaction_id=0,
+                id_tag_info=IdTagInfo(status=AuthorizationStatus.invalid.value),
+            )
+
+        transaction_id = int(result["ocpp_transaction_id"])
+
+        return call_result.StartTransaction(
+            transaction_id=transaction_id,
+            id_tag_info=IdTagInfo(status=AuthorizationStatus.accepted.value),
+        )
+
 
 def _map_ocpp_status(ocpp_status: str) -> str:
     mapping = {
