@@ -99,8 +99,11 @@ async def send_stop_transaction(
 async def _post(path: str, payload: dict) -> dict:
     url = f"{LARAVEL_BASE_URL}{path}"
 
-    async with httpx.AsyncClient() as client:
-        response = await client.post(url, json=payload, headers=_headers())
+    try:
+        async with httpx.AsyncClient(timeout=10.0) as client:
+            response = await client.post(url, json=payload, headers=_headers())
+    except httpx.RequestError as e:
+        raise BridgeClientError(503, f"Could not reach Laravel bridge: {e}") from e
 
     if response.status_code >= 400:
         try:
