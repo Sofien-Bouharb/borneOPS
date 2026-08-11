@@ -4,6 +4,7 @@ from fastapi import FastAPI, WebSocket
 from websockets.exceptions import ConnectionClosed
 
 from app.charge_point import BorneOpsChargePoint16
+from app.charge_point_v201 import BorneOpsChargePoint201
 from app.ws_adapter import FastApiWebSocketAdapter
 
 logging.basicConfig(level=logging.INFO)
@@ -19,12 +20,27 @@ def health() -> dict[str, str]:
 
 @app.websocket("/ocpp/{ocpp_identifier}")
 async def ocpp_websocket(websocket: WebSocket, ocpp_identifier: str):
-    await websocket.accept(subprotocol="ocpp1.6")
+    offered_protocols = [
+        p.strip() for p in websocket.headers.get("sec-websocket-protocol", "").split(",") if p.strip()
+    ]
+
+    if "ocpp2.0.1" in offered_protocols:
+        subprotocol = "ocpp2.0.1"
+        chosen_version = "2.0.1"
+    else:
+        subprotocol = "ocpp1.6"
+        chosen_version = "1.6"
+
+    await websocket.accept(subprotocol=subprotocol)
 
     connection = FastApiWebSocketAdapter(websocket)
-    charge_point = BorneOpsChargePoint16(ocpp_identifier, connection)
 
-    logger.info(f"Charge point connected: {ocpp_identifier}")
+    if chosen_version == "2.0.1":
+        charge_point = BorneOpsChargePoint201(ocpp_identifier, connection)
+    else:
+        charge_point = BorneOpsChargePoint16(ocpp_identifier, connection)
+
+    logger.info(f"Charge point connected: {ocpp_identifier} (OCPP {chosen_version})")
 
     try:
         await charge_point.start()

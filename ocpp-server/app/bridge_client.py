@@ -56,6 +56,20 @@ async def send_start_transaction(
     })
 
 
+async def send_start_transaction_external(
+    ocpp_identifier: str,
+    connector_number: int,
+    external_transaction_id: str,
+    meter_start_wh: int,
+) -> dict:
+    return await _post("/api/internal/ocpp/transactions/start-external", {
+        "ocpp_identifier": ocpp_identifier,
+        "connector_number": connector_number,
+        "external_transaction_id": external_transaction_id,
+        "meter_start_wh": meter_start_wh,
+    })
+
+
 async def send_meter_values(
     ocpp_identifier: str,
     ocpp_transaction_id: str,

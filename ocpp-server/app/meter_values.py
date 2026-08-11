@@ -52,3 +52,46 @@ def extract_energy_wh(meter_value: list[dict]) -> int | None:
         raw_value *= 1000
 
     return int(round(raw_value))
+
+
+def extract_energy_wh_v201(meter_value: list[dict]) -> int | None:
+    """
+    OCPP 2.0.1 variant of extract_energy_wh(). Structurally similar, but
+    two real differences confirmed against the ocpp==2.1.0 library:
+
+    - sampled_value.value is already a float on the wire, not a numeric
+      string (1.6 sends strings; 2.0.1's SampledValueType declares value as
+      a genuine float).
+    - the unit lives nested under sampled_value.unit_of_measure.unit rather
+      than a flat sampled_value.unit key. If unit_of_measure is absent
+      entirely, the OCPP 2.0.1 spec's default unit is Wh.
+    """
+    if not meter_value:
+        return None
+
+    latest_entry = meter_value[-1]
+    sampled_values = latest_entry.get("sampled_value", [])
+
+    if not sampled_values:
+        return None
+
+    chosen = None
+    for sample in sampled_values:
+        if sample.get("measurand") == "Energy.Active.Import.Register":
+            chosen = sample
+            break
+
+    if chosen is None:
+        chosen = sampled_values[0]
+
+    try:
+        raw_value = float(chosen["value"])
+    except (KeyError, TypeError, ValueError):
+        return None
+
+    unit_of_measure = chosen.get("unit_of_measure") or {}
+    unit = unit_of_measure.get("unit", "Wh")
+    if unit == "kWh":
+        raw_value *= 1000
+
+    return int(round(raw_value))
