@@ -28,10 +28,15 @@ return Application::configure(basePath: dirname(__DIR__))
         // routes can use `permission:organizations.view` etc. Module 1 seeded
         // the permissions but attached none to routes — Module 2 is the first
         // to actually enforce them.
+        //
+        // ocpp_bridge authenticates the OCPP gateway service itself via a
+        // shared secret (OCPP_BRIDGE_TOKEN) — never a human JWT, never Spatie
+        // permissions. Used only on the internal /api/internal/ocpp/* routes.
         $middleware->alias([
             'permission' => \Spatie\Permission\Middleware\PermissionMiddleware::class,
             'role' => \Spatie\Permission\Middleware\RoleMiddleware::class,
             'role_or_permission' => \Spatie\Permission\Middleware\RoleOrPermissionMiddleware::class,
+            'ocpp_bridge' => \App\Http\Middleware\OcppBridgeAuthenticate::class,
         ]);
     })
     ->withExceptions(function (Exceptions $exceptions): void {

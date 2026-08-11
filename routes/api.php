@@ -11,6 +11,8 @@ use App\Http\Controllers\ChargingStationController;
 use App\Http\Controllers\ConnectorController;
 use App\Http\Controllers\SupervisionController;
 use App\Http\Controllers\ChargingSessionController;
+use App\Http\Controllers\Ocpp\OcppBridgeController;
+use App\Http\Controllers\ChargingStationRemoteControlController;
 
 
 Route::post('/login', [AuthController::class, 'login'])
@@ -120,4 +122,33 @@ Route::middleware('auth:api')->group(function () {
         ->middleware('permission:charging_sessions.end');
     Route::post('/charging-sessions/{session}/cancel', [ChargingSessionController::class, 'cancel'])
         ->middleware('permission:charging_sessions.cancel');
+// --- OCPP Remote Control ---
+    Route::post('/charging-stations/{station}/remote-start', [ChargingStationRemoteControlController::class, 'remoteStart'])
+        ->middleware('permission:charging_stations.remote_control');
+    Route::post('/charging-stations/{station}/charging-sessions/{session}/remote-stop', [ChargingStationRemoteControlController::class, 'remoteStop'])
+        ->middleware('permission:charging_stations.remote_control');
+    Route::post('/charging-stations/{station}/reset', [ChargingStationRemoteControlController::class, 'reset'])
+        ->middleware('permission:charging_stations.remote_control');
+    Route::post('/charging-stations/{station}/connectors/{connector}/unlock', [ChargingStationRemoteControlController::class, 'unlockConnector'])
+        ->middleware('permission:charging_stations.remote_control');
+
+
+});
+
+// --- OCPP Server Integration: internal bridge ---
+// Authenticated by a shared service secret (OCPP_BRIDGE_TOKEN via the
+// ocpp_bridge middleware), never a human JWT, never Spatie permissions.
+// Only the Python OCPP gateway calls these routes.
+Route::middleware('ocpp_bridge')->prefix('internal/ocpp')->group(function () {
+    Route::get('/ping', function () {
+        return response()->json(['message' => 'OCPP bridge authenticated successfully.']);
+    });
+
+    Route::post('/events/heartbeat', [OcppBridgeController::class, 'heartbeat']);
+    Route::post('/events/boot-notification', [OcppBridgeController::class, 'bootNotification']);
+    Route::post('/events/status-notification', [OcppBridgeController::class, 'statusNotification']);
+    Route::post('/transactions/start', [OcppBridgeController::class, 'startTransaction']);
+    Route::post('/transactions/meter-values', [OcppBridgeController::class, 'meterValues']);
+    Route::post('/transactions/stop', [OcppBridgeController::class, 'stopTransaction']);
+    Route::post('/transactions/start-external', [OcppBridgeController::class, 'startTransactionExternal']);
 });

@@ -35,4 +35,12 @@ return [
         ],
     ],
 
+    'ocpp_bridge' => [
+        'token' => env('OCPP_BRIDGE_TOKEN'),
+    ],
+
+    'ocpp_gateway' => [
+        'base_url' => env('OCPP_GATEWAY_BASE_URL', 'http://127.0.0.1:8001'),
+    ],
+
 ];

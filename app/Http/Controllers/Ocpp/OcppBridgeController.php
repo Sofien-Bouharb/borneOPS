@@ -1,0 +1,251 @@
+<?php
+
+namespace App\Http\Controllers\Ocpp;
+
+use App\Http\Controllers\Controller;
+use App\Http\Requests\Ocpp\BootNotificationEventRequest;
+use App\Http\Requests\Ocpp\HeartbeatEventRequest;
+use App\Http\Requests\Ocpp\StartTransactionEventRequest;
+use App\Http\Requests\Ocpp\StatusNotificationEventRequest;
+use App\Models\ChargingStation;
+use App\Models\Connector;
+use App\Services\ChargingSessionService;
+use App\Services\StationMonitoringService;
+use Illuminate\Http\JsonResponse;
+use App\Http\Requests\Ocpp\MeterValuesEventRequest;
+use App\Http\Requests\Ocpp\StopTransactionEventRequest;
+use App\Http\Requests\Ocpp\StartTransactionExternalEventRequest;
+
+
+class OcppBridgeController extends Controller
+{
+    public function __construct(
+        protected StationMonitoringService $monitoringService,
+        protected ChargingSessionService $sessionService,
+    ) {
+    }
+
+    public function heartbeat(HeartbeatEventRequest $request): JsonResponse
+    {
+        $validated = $request->validated();
+
+        $station = ChargingStation::where('ocpp_identifier', $validated['ocpp_identifier'])->first();
+
+        if ($station === null) {
+            return response()->json([
+                'message' => "No station found with ocpp_identifier '{$validated['ocpp_identifier']}'.",
+            ], 404);
+        }
+
+        $this->monitoringService->recordHeartbeat($station);
+
+        return response()->json(['message' => 'Heartbeat recorded.']);
+    }
+
+    public function bootNotification(BootNotificationEventRequest $request): JsonResponse
+    {
+        $validated = $request->validated();
+
+        $station = ChargingStation::where('ocpp_identifier', $validated['ocpp_identifier'])->first();
+
+        if ($station === null) {
+            return response()->json([
+                'message' => "No station found with ocpp_identifier '{$validated['ocpp_identifier']}'.",
+            ], 404);
+        }
+
+        $this->monitoringService->recordSeen($station);
+
+        return response()->json(['message' => 'Boot notification recorded.']);
+    }
+
+    public function statusNotification(StatusNotificationEventRequest $request): JsonResponse
+    {
+        $validated = $request->validated();
+
+        $station = ChargingStation::where('ocpp_identifier', $validated['ocpp_identifier'])->first();
+
+        if ($station === null) {
+            return response()->json([
+                'message' => "No station found with ocpp_identifier '{$validated['ocpp_identifier']}'.",
+            ], 404);
+        }
+
+        if ($validated['connector_number'] ?? null) {
+            $connector = Connector::where('charging_station_id', $station->id)
+                ->where('connector_number', $validated['connector_number'])
+                ->first();
+
+            if ($connector === null) {
+                return response()->json([
+                    'message' => "No connector number {$validated['connector_number']} found on station '{$validated['ocpp_identifier']}'.",
+                ], 404);
+            }
+
+            $this->monitoringService->recordConnectorOperationalStatus($connector, $validated['operational_status']);
+
+            return response()->json(['message' => 'Connector status notification recorded.']);
+        }
+
+        $this->monitoringService->recordOperationalStatus($station, $validated['operational_status']);
+
+        return response()->json(['message' => 'Station status notification recorded.']);
+    }
+
+public function startTransaction(StartTransactionEventRequest $request): JsonResponse
+    {
+        $validated = $request->validated();
+
+        $station = ChargingStation::where('ocpp_identifier', $validated['ocpp_identifier'])->first();
+
+        if ($station === null) {
+            return response()->json([
+                'message' => "No station found with ocpp_identifier '{$validated['ocpp_identifier']}'.",
+            ], 404);
+        }
+
+        $connector = Connector::where('charging_station_id', $station->id)
+            ->where('connector_number', $validated['connector_number'])
+            ->first();
+
+        if ($connector === null) {
+            return response()->json([
+                'message' => "No connector number {$validated['connector_number']} found on station '{$validated['ocpp_identifier']}'.",
+            ], 404);
+        }
+
+        $session = $this->sessionService->bindOcppTransactionId(
+            $station,
+            $connector,
+            $validated['meter_start_wh'],
+        );
+
+        return response()->json([
+            'message' => 'Transaction started.',
+            'session_id' => $session->id,
+            'ocpp_transaction_id' => $session->ocpp_transaction_id,
+        ]);
+    }
+
+
+public function meterValues(MeterValuesEventRequest $request): JsonResponse
+    {
+        $validated = $request->validated();
+
+        $station = ChargingStation::where('ocpp_identifier', $validated['ocpp_identifier'])->first();
+
+        if ($station === null) {
+            return response()->json([
+                'message' => "No station found with ocpp_identifier '{$validated['ocpp_identifier']}'.",
+            ], 404);
+        }
+
+        $session = \App\Models\ChargingSession::where('charging_station_id', $station->id)
+            ->where('ocpp_transaction_id', $validated['ocpp_transaction_id'])
+            ->first();
+
+        if ($session === null) {
+            return response()->json([
+                'message' => "No session found for transaction '{$validated['ocpp_transaction_id']}' on station '{$validated['ocpp_identifier']}'.",
+            ], 404);
+        }
+
+        $this->sessionService->recordMeterValue($session, $validated['meter_value_wh']);
+
+        return response()->json(['message' => 'Meter value recorded.']);
+    }
+
+
+public function stopTransaction(StopTransactionEventRequest $request): JsonResponse
+    {
+        $validated = $request->validated();
+
+        $station = ChargingStation::where('ocpp_identifier', $validated['ocpp_identifier'])->first();
+
+        if ($station === null) {
+            return response()->json([
+                'message' => "No station found with ocpp_identifier '{$validated['ocpp_identifier']}'.",
+            ], 404);
+        }
+
+        $session = \App\Models\ChargingSession::where('charging_station_id', $station->id)
+            ->where('ocpp_transaction_id', $validated['ocpp_transaction_id'])
+            ->first();
+
+        if ($session === null) {
+            \Illuminate\Support\Facades\Log::warning('orphan_stop_transaction', [
+                'ocpp_identifier' => $validated['ocpp_identifier'],
+                'ocpp_transaction_id' => $validated['ocpp_transaction_id'],
+                'meter_stop_wh' => $validated['meter_stop_wh'],
+                'reason_code' => $validated['reason_code'],
+            ]);
+
+            return response()->json([
+                'message' => 'No matching session found for this transaction. Acknowledged, no action taken.',
+            ]);
+        }
+
+        if ($session->status === 'completed') {
+            return response()->json([
+                'message' => 'Transaction already completed.',
+                'session_id' => $session->id,
+            ]);
+        }
+
+        $session = $this->sessionService->complete(
+            $session,
+            $validated['meter_stop_wh'],
+            $validated['reason_code'],
+            null,
+            null,
+            'ocpp',
+        );
+
+        return response()->json([
+            'message' => 'Transaction stopped.',
+            'session_id' => $session->id,
+        ]);
+    }
+
+
+
+public function startTransactionExternal(StartTransactionExternalEventRequest $request): JsonResponse
+    {
+        $validated = $request->validated();
+
+        $station = ChargingStation::where('ocpp_identifier', $validated['ocpp_identifier'])->first();
+
+        if ($station === null) {
+            return response()->json([
+                'message' => "No station found with ocpp_identifier '{$validated['ocpp_identifier']}'.",
+            ], 404);
+        }
+
+        $connector = Connector::where('charging_station_id', $station->id)
+            ->where('connector_number', $validated['connector_number'])
+            ->first();
+
+        if ($connector === null) {
+            return response()->json([
+                'message' => "No connector number {$validated['connector_number']} found on station '{$validated['ocpp_identifier']}'.",
+            ], 404);
+        }
+
+        $session = $this->sessionService->bindExternalTransactionId(
+            $station,
+            $connector,
+            $validated['external_transaction_id'],
+            $validated['meter_start_wh'],
+        );
+
+        return response()->json([
+            'message' => 'Transaction started.',
+            'session_id' => $session->id,
+            'ocpp_transaction_id' => $session->ocpp_transaction_id,
+        ]);
+    }
+
+
+
+
+}
