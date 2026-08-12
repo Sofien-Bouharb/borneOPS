@@ -15,6 +15,7 @@ use Illuminate\Http\JsonResponse;
 use App\Http\Requests\Ocpp\MeterValuesEventRequest;
 use App\Http\Requests\Ocpp\StopTransactionEventRequest;
 use App\Http\Requests\Ocpp\StartTransactionExternalEventRequest;
+use App\Http\Requests\Ocpp\VerifyStationCredentialRequest;
 
 
 class OcppBridgeController extends Controller
@@ -23,6 +24,29 @@ class OcppBridgeController extends Controller
         protected StationMonitoringService $monitoringService,
         protected ChargingSessionService $sessionService,
     ) {
+    }
+
+
+
+public function verifyStationCredential(VerifyStationCredentialRequest $request): JsonResponse
+    {
+        $validated = $request->validated();
+
+        $station = ChargingStation::where('ocpp_identifier', $validated['ocpp_identifier'])->first();
+
+        if ($station === null) {
+            return response()->json(['authorized' => false, 'reason' => 'unknown_station'], 200);
+        }
+
+        if ($station->ocpp_auth_password_hash === null) {
+            return response()->json(['authorized' => false, 'reason' => 'no_credential_configured'], 200);
+        }
+
+        if (!\Illuminate\Support\Facades\Hash::check($validated['password'], $station->ocpp_auth_password_hash)) {
+            return response()->json(['authorized' => false, 'reason' => 'invalid_credential'], 200);
+        }
+
+        return response()->json(['authorized' => true], 200);
     }
 
     public function heartbeat(HeartbeatEventRequest $request): JsonResponse

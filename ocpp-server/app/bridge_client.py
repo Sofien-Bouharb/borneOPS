@@ -45,6 +45,15 @@ async def send_status_notification(
     return await _post("/api/internal/ocpp/events/status-notification", payload)
 
 
+async def verify_station_credential(ocpp_identifier: str, password: str) -> bool:
+    result = await _post("/api/internal/ocpp/verify-station-credential", {
+        "ocpp_identifier": ocpp_identifier,
+        "password": password,
+    })
+    return result.get("authorized", False)
+
+
+
 async def send_start_transaction(
     ocpp_identifier: str,
     connector_number: int,

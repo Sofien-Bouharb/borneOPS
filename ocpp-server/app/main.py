@@ -3,7 +3,9 @@ import logging
 from fastapi import FastAPI, WebSocket
 from websockets.exceptions import ConnectionClosed
 
-from app import registry
+from app import bridge_client, registry
+from app.basic_auth import parse_basic_auth
+from app.bridge_client import BridgeClientError
 from app.charge_point import BorneOpsChargePoint16
 from app.charge_point_v201 import BorneOpsChargePoint201
 from app.commands import router as commands_router
@@ -37,6 +39,31 @@ async def ocpp_websocket(websocket: WebSocket, ocpp_identifier: str):
             f"(offered: {offered_protocols or 'none'})."
         )
         await websocket.close(code=1002, reason="Unsupported or missing OCPP subprotocol")
+        return
+
+    credential = parse_basic_auth(websocket.headers.get("authorization"))
+
+    if credential is None:
+        logger.warning(f"Rejecting connection for {ocpp_identifier}: no Basic Auth credential presented.")
+        await websocket.close(code=1008, reason="Missing station credential")
+        return
+
+    _username, password = credential
+
+    try:
+        authorized = await bridge_client.verify_station_credential(ocpp_identifier, password)
+    except BridgeClientError as e:
+        # Authentication must fail closed: if we cannot verify a credential,
+        # the connection is never accepted, regardless of why verification
+        # failed. This is deliberately the opposite policy from the
+        # fail-open telemetry handling elsewhere in the gateway.
+        logger.warning(f"Rejecting connection for {ocpp_identifier}: could not verify credential ({e}).")
+        await websocket.close(code=1011, reason="Could not verify station credential")
+        return
+
+    if not authorized:
+        logger.warning(f"Rejecting connection for {ocpp_identifier}: invalid station credential.")
+        await websocket.close(code=1008, reason="Invalid station credential")
         return
 
     subprotocol = "ocpp2.0.1" if "ocpp2.0.1" in supported_offered else "ocpp1.6"
