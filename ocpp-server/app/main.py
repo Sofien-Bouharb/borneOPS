@@ -15,6 +15,8 @@ logger = logging.getLogger("ocpp-gateway")
 app = FastAPI(title="BorneOPS OCPP Gateway")
 app.include_router(commands_router)
 
+SUPPORTED_SUBPROTOCOLS = {"ocpp1.6", "ocpp2.0.1"}
+
 
 @app.get("/health")
 def health() -> dict[str, str]:
@@ -27,12 +29,18 @@ async def ocpp_websocket(websocket: WebSocket, ocpp_identifier: str):
         p.strip() for p in websocket.headers.get("sec-websocket-protocol", "").split(",") if p.strip()
     ]
 
-    if "ocpp2.0.1" in offered_protocols:
-        subprotocol = "ocpp2.0.1"
-        chosen_version = "2.0.1"
-    else:
-        subprotocol = "ocpp1.6"
-        chosen_version = "1.6"
+    supported_offered = [p for p in offered_protocols if p in SUPPORTED_SUBPROTOCOLS]
+
+    if not supported_offered:
+        logger.warning(
+            f"Rejecting connection for {ocpp_identifier}: no supported OCPP subprotocol offered "
+            f"(offered: {offered_protocols or 'none'})."
+        )
+        await websocket.close(code=1002, reason="Unsupported or missing OCPP subprotocol")
+        return
+
+    subprotocol = "ocpp2.0.1" if "ocpp2.0.1" in supported_offered else "ocpp1.6"
+    chosen_version = "2.0.1" if subprotocol == "ocpp2.0.1" else "1.6"
 
     await websocket.accept(subprotocol=subprotocol)
     connection = FastApiWebSocketAdapter(websocket)
