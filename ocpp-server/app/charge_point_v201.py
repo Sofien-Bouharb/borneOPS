@@ -13,6 +13,8 @@ from app.bridge_client import BridgeClientError
 from app.meter_values import extract_energy_wh_v201
 from app.stop_reason import map_stop_reason
 
+from app.reconciliation import log_unreconciled_stop
+
 logger = logging.getLogger("ocpp-gateway")
 
 
@@ -112,15 +114,20 @@ class BorneOpsChargePoint201(ChargePoint201):
         elif event_type == "Ended":
             stopped_reason = transaction_info.get("stopped_reason")
             reason_code = map_stop_reason(stopped_reason)
+            final_meter_wh = energy_wh if energy_wh is not None else 0
             try:
                 await bridge_client.send_stop_transaction(
                     self.id,
                     transaction_id,
-                    energy_wh if energy_wh is not None else 0,
+                    final_meter_wh,
                     reason_code,
                 )
             except BridgeClientError as e:
-                logger.warning(f"TransactionEvent(Ended) bridge call failed for {self.id}: {e}")
+                # Same protocol limitation as OCPP 1.6: TransactionEvent's
+                # response carries no field to signal rejection to the
+                # charger for an Ended event. send_stop_transaction() has
+                # already retried transient/5xx failures internally.
+                log_unreconciled_stop(self.id, transaction_id, final_meter_wh, reason_code, str(e))
 
         return call_result.TransactionEvent()
 

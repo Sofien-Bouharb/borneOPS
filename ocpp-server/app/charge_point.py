@@ -13,6 +13,10 @@ from app.bridge_client import BridgeClientError
 from app.meter_values import extract_energy_wh
 from app.stop_reason import map_stop_reason
 
+from app.reconciliation import log_unreconciled_stop
+
+
+
 logger = logging.getLogger("ocpp-gateway")
 
 
@@ -130,7 +134,13 @@ class BorneOpsChargePoint16(ChargePoint16):
                 reason_code,
             )
         except BridgeClientError as e:
-            logger.warning(f"StopTransaction bridge call failed for {self.id}: {e}")
+            # OCPP 1.6's StopTransaction response has no field to signal
+            # rejection to the charger — the acknowledgment below is always
+            # required regardless of outcome. send_stop_transaction() has
+            # already retried transient/5xx failures internally; if it still
+            # failed, this is durably logged for reconciliation rather than
+            # silently lost to a single warning line.
+            log_unreconciled_stop(self.id, str(transaction_id), meter_stop, reason_code, str(e))
 
         return call_result.StopTransaction()
 
