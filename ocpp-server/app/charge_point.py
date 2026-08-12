@@ -146,13 +146,25 @@ class BorneOpsChargePoint16(ChargePoint16):
 
 
 def _map_ocpp_status(ocpp_status: str) -> str:
+    # "Preparing" and "Finishing" are deliberately NOT mapped to "occupied".
+    # Per the frozen roadmap decision #7, occupancy is ChargingSessionService's
+    # exclusive concern — StatusNotification must never preemptively set
+    # occupied ahead of a real transaction-start. "Preparing" fires before
+    # StartTransaction arrives (cable connected, session not yet begun);
+    # mapping it to occupied would incorrectly block the legitimate
+    # StartTransaction that follows it. "Finishing" fires after
+    # StopTransaction, once complete() has already released the connector
+    # back to available — mapping it to occupied would incorrectly re-lock
+    # an already-completed connector. "Charging"/"SuspendedEVSE"/"SuspendedEV"
+    # occur strictly mid-transaction, after start() has already set occupied,
+    # so mapping them to occupied here is redundant but harmless.
     mapping = {
         "Available": "available",
-        "Preparing": "occupied",
+        "Preparing": "available",
         "Charging": "occupied",
         "SuspendedEVSE": "occupied",
         "SuspendedEV": "occupied",
-        "Finishing": "occupied",
+        "Finishing": "available",
         "Reserved": "occupied",
         "Unavailable": "out_of_service",
         "Faulted": "fault",
