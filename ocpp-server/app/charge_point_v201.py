@@ -90,7 +90,19 @@ class BorneOpsChargePoint201(ChargePoint201):
         **kwargs,
     ):
         transaction_id = transaction_info.get("transaction_id")
-        connector_number = evse.get("connector_id") if evse else None
+        # Real OCPP 2.0.1 chargers commonly omit connectorId when an EVSE
+        # has exactly one connector — connectorId is optional per spec for
+        # exactly this case. Falling back to the EVSE's own id treats that
+        # single connector as sharing the EVSE's numbering, which matches
+        # this project's EVSE-per-single-connector test setup. A charger
+        # with genuinely multiple connectors per EVSE would need the real
+        # ocpp_evse_id/ocpp_connector_id mapping (decision #18 columns,
+        # not yet wired into a lookup) — documented as a follow-up.
+        connector_number = None
+        if evse:
+            connector_number = evse.get("connector_id")
+            if connector_number is None:
+                connector_number = evse.get("id")
         energy_wh = extract_energy_wh_v201(meter_value) if meter_value else None
 
         if event_type == "Started":

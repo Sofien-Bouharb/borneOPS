@@ -88,6 +88,26 @@ async def test_transaction_event_started_calls_bridge_with_external_id(charge_po
 
     mock_call.assert_awaited_once_with("TEST-CP-201", 1, "CP201-TXN-001", 1000)
 
+@pytest.mark.asyncio
+async def test_transaction_event_started_falls_back_to_evse_id_when_connector_id_missing(charge_point):
+    with patch("app.charge_point_v201.bridge_client.send_start_transaction_external", new=AsyncMock()) as mock_call:
+        await charge_point.on_transaction_event(
+            event_type="Started",
+            timestamp="2026-08-12T13:00:00Z",
+            trigger_reason="Authorized",
+            seq_no=0,
+            transaction_info={"transaction_id": "CP201-TXN-004"},
+            evse={"id": 1},
+            meter_value=[{
+                "timestamp": "2026-08-12T13:00:00Z",
+                "sampled_value": [{"value": 500.0, "measurand": "Energy.Active.Import.Register"}],
+            }],
+        )
+
+    mock_call.assert_awaited_once_with("TEST-CP-201", 1, "CP201-TXN-004", 500)
+
+
+
 
 @pytest.mark.asyncio
 async def test_transaction_event_started_defaults_to_zero_when_no_meter_value(charge_point):
