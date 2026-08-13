@@ -45,10 +45,11 @@ async def send_status_notification(
     return await _post("/api/internal/ocpp/events/status-notification", payload)
 
 
-async def verify_station_credential(ocpp_identifier: str, password: str) -> bool:
+async def verify_station_credential(ocpp_identifier: str, password: str, negotiated_version: str) -> bool:
     result = await _post("/api/internal/ocpp/verify-station-credential", {
         "ocpp_identifier": ocpp_identifier,
         "password": password,
+        "negotiated_version": negotiated_version,
     })
     return result.get("authorized", False)
 

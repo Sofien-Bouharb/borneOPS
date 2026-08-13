@@ -38,12 +38,20 @@ public function verifyStationCredential(VerifyStationCredentialRequest $request)
             return response()->json(['authorized' => false, 'reason' => 'unknown_station'], 200);
         }
 
+        if ($station->administrative_status === 'decommissioned') {
+            return response()->json(['authorized' => false, 'reason' => 'station_decommissioned'], 200);
+        }
+
         if ($station->ocpp_auth_password_hash === null) {
             return response()->json(['authorized' => false, 'reason' => 'no_credential_configured'], 200);
         }
 
         if (!\Illuminate\Support\Facades\Hash::check($validated['password'], $station->ocpp_auth_password_hash)) {
             return response()->json(['authorized' => false, 'reason' => 'invalid_credential'], 200);
+        }
+
+        if ($station->ocpp_version !== $validated['negotiated_version']) {
+            return response()->json(['authorized' => false, 'reason' => 'version_mismatch'], 200);
         }
 
         return response()->json(['authorized' => true], 200);

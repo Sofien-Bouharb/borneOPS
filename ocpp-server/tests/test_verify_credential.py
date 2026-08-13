@@ -19,7 +19,7 @@ async def test_returns_true_when_authorized():
 
     with patch("httpx.AsyncClient") as mock_client_cls:
         mock_client_cls.return_value.__aenter__.return_value = fake_client
-        result = await verify_station_credential("CP-001", "correct-password")
+        result = await verify_station_credential("CP-001", "correct-password", "1.6")
 
     assert result is True
 
@@ -33,6 +33,23 @@ async def test_returns_false_when_not_authorized():
 
     with patch("httpx.AsyncClient") as mock_client_cls:
         mock_client_cls.return_value.__aenter__.return_value = fake_client
-        result = await verify_station_credential("CP-001", "wrong-password")
+        result = await verify_station_credential("CP-001", "wrong-password", "1.6")
 
     assert result is False
+
+
+@pytest.mark.asyncio
+async def test_sends_negotiated_version_in_payload():
+    fake_client = AsyncMock()
+    fake_client.post = AsyncMock(return_value=_fake_response(200, {"authorized": True}))
+
+    with patch("httpx.AsyncClient") as mock_client_cls:
+        mock_client_cls.return_value.__aenter__.return_value = fake_client
+        await verify_station_credential("CP201-001", "correct-password", "2.0.1")
+
+    sent_payload = fake_client.post.call_args.kwargs["json"]
+    assert sent_payload == {
+        "ocpp_identifier": "CP201-001",
+        "password": "correct-password",
+        "negotiated_version": "2.0.1",
+    }

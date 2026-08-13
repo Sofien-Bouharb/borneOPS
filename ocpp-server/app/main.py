@@ -50,8 +50,16 @@ async def ocpp_websocket(websocket: WebSocket, ocpp_identifier: str):
 
     _username, password = credential
 
+    # The negotiated subprotocol must be known before authorization, since
+    # Laravel's verify-station-credential check now also confirms the
+    # negotiated protocol matches the station's configured ocpp_version —
+    # a station configured for 1.6 connecting while negotiating 2.0.1 (or
+    # vice versa) must be rejected here, before accept() is ever called.
+    subprotocol = "ocpp2.0.1" if "ocpp2.0.1" in supported_offered else "ocpp1.6"
+    chosen_version = "2.0.1" if subprotocol == "ocpp2.0.1" else "1.6"
+
     try:
-        authorized = await bridge_client.verify_station_credential(ocpp_identifier, password)
+        authorized = await bridge_client.verify_station_credential(ocpp_identifier, password, chosen_version)
     except BridgeClientError as e:
         # Authentication must fail closed: if we cannot verify a credential,
         # the connection is never accepted, regardless of why verification
@@ -62,12 +70,12 @@ async def ocpp_websocket(websocket: WebSocket, ocpp_identifier: str):
         return
 
     if not authorized:
-        logger.warning(f"Rejecting connection for {ocpp_identifier}: invalid station credential.")
+        logger.warning(
+            f"Rejecting connection for {ocpp_identifier}: not authorized "
+            f"(invalid credential, decommissioned station, or version mismatch)."
+        )
         await websocket.close(code=1008, reason="Invalid station credential")
         return
-
-    subprotocol = "ocpp2.0.1" if "ocpp2.0.1" in supported_offered else "ocpp1.6"
-    chosen_version = "2.0.1" if subprotocol == "ocpp2.0.1" else "1.6"
 
     await websocket.accept(subprotocol=subprotocol)
     connection = FastApiWebSocketAdapter(websocket)

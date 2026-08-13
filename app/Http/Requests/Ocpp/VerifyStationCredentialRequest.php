@@ -16,6 +16,7 @@ class VerifyStationCredentialRequest extends FormRequest
         return [
             'ocpp_identifier' => ['required', 'string'],
             'password' => ['required', 'string'],
+            'negotiated_version' => ['required', 'string', 'in:1.6,2.0.1'],
         ];
     }
 }
