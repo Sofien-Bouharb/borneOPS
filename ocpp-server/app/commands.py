@@ -1,3 +1,4 @@
+import asyncio
 import logging
 import secrets
 
@@ -57,6 +58,29 @@ def _generate_remote_start_id() -> int:
     return secrets.randbelow(2_147_483_647) + 1
 
 
+async def _call_charge_point(charge_point, message):
+    """
+    Wraps every outbound charge_point.call() used by this router.
+
+    A charger that never responds (busy, slow, or mid-way through
+    unrelated activity of its own) is a foreseeable, non-exceptional
+    scenario — not a server bug. Without this wrapper, the ocpp library's
+    internal 30s response wait raises a bare asyncio.TimeoutError that
+    propagates as an unhandled 500 with a full stack trace leaked to the
+    API consumer. This converts that into a clean, structured 504 so
+    Laravel's existing failed()-response handling (which already maps
+    non-2xx gateway responses to a user-facing InvalidStateTransitionException)
+    can surface it the same way it surfaces a 404 or 422.
+    """
+    try:
+        return await charge_point.call(message)
+    except asyncio.TimeoutError:
+        raise HTTPException(
+            status_code=504,
+            detail="Timed out waiting for a response from the charge point.",
+        )
+
+
 class RemoteStartBody(BaseModel):
     id_tag: str
     connector_number: int | None = None
@@ -82,13 +106,13 @@ async def remote_start(ocpp_identifier: str, body: RemoteStartBody, x_ocpp_bridg
     charge_point = _get_connected_charge_point(ocpp_identifier)
 
     if _is_v201(charge_point):
-        response = await charge_point.call(call201.RequestStartTransaction(
+        response = await _call_charge_point(charge_point, call201.RequestStartTransaction(
             id_token=IdTokenType(id_token=body.id_tag, type=IdTokenEnumType.central),
             remote_start_id=_generate_remote_start_id(),
             evse_id=body.connector_number,
         ))
     else:
-        response = await charge_point.call(call16.RemoteStartTransaction(
+        response = await _call_charge_point(charge_point, call16.RemoteStartTransaction(
             id_tag=body.id_tag,
             connector_id=body.connector_number,
         ))
@@ -102,7 +126,7 @@ async def remote_stop(ocpp_identifier: str, body: RemoteStopBody, x_ocpp_bridge_
     charge_point = _get_connected_charge_point(ocpp_identifier)
 
     if _is_v201(charge_point):
-        response = await charge_point.call(call201.RequestStopTransaction(
+        response = await _call_charge_point(charge_point, call201.RequestStopTransaction(
             transaction_id=body.ocpp_transaction_id,
         ))
     else:
@@ -111,7 +135,7 @@ async def remote_stop(ocpp_identifier: str, body: RemoteStopBody, x_ocpp_bridge_
         except ValueError:
             raise HTTPException(status_code=422, detail="ocpp_transaction_id must be numeric for OCPP 1.6 RemoteStopTransaction.")
 
-        response = await charge_point.call(call16.RemoteStopTransaction(transaction_id=transaction_id))
+        response = await _call_charge_point(charge_point, call16.RemoteStopTransaction(transaction_id=transaction_id))
 
     return {"status": response.status}
 
@@ -126,9 +150,9 @@ async def reset(ocpp_identifier: str, body: ResetBody, x_ocpp_bridge_token: str 
 
     if _is_v201(charge_point):
         mapped_type = ResetEnumType(_RESET_TYPE_1_6_TO_2_0_1[body.type])
-        response = await charge_point.call(call201.Reset(type=mapped_type))
+        response = await _call_charge_point(charge_point, call201.Reset(type=mapped_type))
     else:
-        response = await charge_point.call(call16.Reset(type=body.type))
+        response = await _call_charge_point(charge_point, call16.Reset(type=body.type))
 
     return {"status": response.status}
 
@@ -145,11 +169,11 @@ async def unlock_connector(ocpp_identifier: str, body: UnlockConnectorBody, x_oc
                 detail="evse_id and connector_id are both required to unlock a connector on an OCPP 2.0.1 station.",
             )
 
-        response = await charge_point.call(call201.UnlockConnector(
+        response = await _call_charge_point(charge_point, call201.UnlockConnector(
             evse_id=body.evse_id,
             connector_id=body.connector_id,
         ))
     else:
-        response = await charge_point.call(call16.UnlockConnector(connector_id=body.connector_number))
+        response = await _call_charge_point(charge_point, call16.UnlockConnector(connector_id=body.connector_number))
 
     return {"status": response.status}

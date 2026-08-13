@@ -1,3 +1,4 @@
+import asyncio
 import pytest
 from unittest.mock import AsyncMock, patch, MagicMock
 from fastapi.testclient import TestClient
@@ -78,6 +79,20 @@ def test_remote_start_sends_request_start_transaction_for_v201_connection():
     assert isinstance(sent_message.remote_start_id, int)
 
 
+def test_remote_start_returns_504_when_charge_point_does_not_respond_in_time():
+    fake_cp = MagicMock()
+    fake_cp.call = AsyncMock(side_effect=asyncio.TimeoutError())
+
+    with patch("app.commands.registry.get", return_value=fake_cp):
+        response = client.post(
+            "/commands/CP-001/remote-start",
+            json={"id_tag": "TAG-1", "connector_number": 1},
+            headers=_headers(),
+        )
+
+    assert response.status_code == 504
+
+
 def test_remote_stop_rejects_non_numeric_transaction_id():
     fake_cp = MagicMock()
     fake_cp.call = AsyncMock()
@@ -123,6 +138,20 @@ def test_remote_stop_accepts_non_numeric_transaction_id_for_v201_connection():
     sent_message = fake_cp.call.call_args.args[0]
     assert isinstance(sent_message, call201.RequestStopTransaction)
     assert sent_message.transaction_id == "CP201-STYLE-STRING"
+
+
+def test_remote_stop_returns_504_when_charge_point_does_not_respond_in_time():
+    fake_cp = MagicMock()
+    fake_cp.call = AsyncMock(side_effect=asyncio.TimeoutError())
+
+    with patch("app.commands.registry.get", return_value=fake_cp):
+        response = client.post(
+            "/commands/CP-001/remote-stop",
+            json={"ocpp_transaction_id": "42"},
+            headers=_headers(),
+        )
+
+    assert response.status_code == 504
 
 
 def test_reset_rejects_invalid_type():
@@ -175,6 +204,20 @@ def test_reset_maps_legacy_type_to_v201_enum(legacy_type, expected_v201_value):
     assert sent_message.type.value == expected_v201_value
 
 
+def test_reset_returns_504_when_charge_point_does_not_respond_in_time():
+    fake_cp = MagicMock()
+    fake_cp.call = AsyncMock(side_effect=asyncio.TimeoutError())
+
+    with patch("app.commands.registry.get", return_value=fake_cp):
+        response = client.post(
+            "/commands/CP-001/reset",
+            json={"type": "Soft"},
+            headers=_headers(),
+        )
+
+    assert response.status_code == 504
+
+
 def test_unlock_connector_calls_charge_point_and_returns_status():
     fake_cp = MagicMock()
     fake_cp.call = AsyncMock(return_value=FakeResult("Unlocked"))
@@ -221,3 +264,17 @@ def test_unlock_connector_rejects_v201_connection_missing_evse_id():
 
     assert response.status_code == 422
     fake_cp.call.assert_not_awaited()
+
+
+def test_unlock_connector_returns_504_when_charge_point_does_not_respond_in_time():
+    fake_cp = MagicMock()
+    fake_cp.call = AsyncMock(side_effect=asyncio.TimeoutError())
+
+    with patch("app.commands.registry.get", return_value=fake_cp):
+        response = client.post(
+            "/commands/CP-001/unlock-connector",
+            json={"connector_number": 1},
+            headers=_headers(),
+        )
+
+    assert response.status_code == 504
