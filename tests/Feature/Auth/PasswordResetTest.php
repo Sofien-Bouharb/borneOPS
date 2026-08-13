@@ -32,22 +32,23 @@ class PasswordResetTest extends TestCase
     }
 
     public function test_forgot_password_returns_the_same_generic_message_for_an_unknown_email(): void
-{
-    Notification::fake();
+    {
+        Notification::fake();
 
-    $knownUser = User::factory()->create();
+        $knownUser = User::factory()->create();
 
-    $knownResponse = $this->postJson('/api/forgot-password', [
-        'email' => $knownUser->email,
-    ]);
+        $knownResponse = $this->postJson('/api/forgot-password', [
+            'email' => $knownUser->email,
+        ]);
 
-    $unknownResponse = $this->postJson('/api/forgot-password', [
-        'email' => 'nobody@example.com',
-    ]);
+        $unknownResponse = $this->postJson('/api/forgot-password', [
+            'email' => 'nobody@example.com',
+        ]);
 
-    $this->assertSame($knownResponse->status(), $unknownResponse->status());
-    $this->assertSame($knownResponse->json('message'), $unknownResponse->json('message'));
-}
+        $this->assertSame($knownResponse->status(), $unknownResponse->status());
+        $this->assertSame($knownResponse->json('message'), $unknownResponse->json('message'));
+    }
+
     public function test_reset_password_with_a_valid_token_succeeds_and_changes_the_password(): void
     {
         $user = User::factory()->create([
@@ -59,14 +60,14 @@ class PasswordResetTest extends TestCase
         $response = $this->postJson('/api/reset-password', [
             'email' => $user->email,
             'token' => $token,
-            'password' => 'new-password',
-            'password_confirmation' => 'new-password',
+            'password' => 'NewPassword123!',
+            'password_confirmation' => 'NewPassword123!',
         ]);
 
         $response->assertStatus(200);
 
         $user->refresh();
-        $this->assertTrue(\Illuminate\Support\Facades\Hash::check('new-password', $user->password));
+        $this->assertTrue(\Illuminate\Support\Facades\Hash::check('NewPassword123!', $user->password));
         $this->assertFalse(\Illuminate\Support\Facades\Hash::check('old-password', $user->password));
         $this->assertNotNull($user->password_changed_at);
     }
@@ -78,11 +79,28 @@ class PasswordResetTest extends TestCase
         $response = $this->postJson('/api/reset-password', [
             'email' => $user->email,
             'token' => 'not-a-real-token',
-            'password' => 'new-password',
-            'password_confirmation' => 'new-password',
+            'password' => 'NewPassword123!',
+            'password_confirmation' => 'NewPassword123!',
         ]);
 
         $response->assertStatus(400);
+    }
+
+    public function test_reset_password_rejects_a_password_that_does_not_meet_complexity_rules(): void
+    {
+        $user = User::factory()->create();
+
+        $token = Password::createToken($user);
+
+        $response = $this->postJson('/api/reset-password', [
+            'email' => $user->email,
+            'token' => $token,
+            'password' => 'weakpassword',
+            'password_confirmation' => 'weakpassword',
+        ]);
+
+        $response->assertStatus(422);
+        $response->assertJsonValidationErrors(['password']);
     }
 
     public function test_reset_password_invalidates_every_other_active_session(): void
@@ -102,8 +120,8 @@ class PasswordResetTest extends TestCase
         $this->postJson('/api/reset-password', [
             'email' => $user->email,
             'token' => $token,
-            'password' => 'new-password',
-            'password_confirmation' => 'new-password',
+            'password' => 'NewPassword123!',
+            'password_confirmation' => 'NewPassword123!',
         ])->assertStatus(200);
 
         $user->refresh();
