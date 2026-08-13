@@ -87,34 +87,34 @@ class AuthController extends Controller
         return $this->respondWithSession($result);
     }
 
-protected function respondWithSession(array $result)
-{
-    $accessToken = JWTAuth::fromUser($result['user']);
+    protected function respondWithSession(array $result)
+    {
+        $accessToken = JWTAuth::fromUser($result['user']);
 
-    return response()->json([
-        'status' => 'success',
-        'access_token' => $accessToken,
-        'user' => $result['user'],
-    ])->withCookie(Cookie::make(
-        name: 'refresh_token',
-        value: $result['refresh_token'],
-        minutes: 60 * 24 * 14,
-        path: '/',
-        secure: ! app()->environment('local'),
-        httpOnly: true,
-        sameSite: 'lax'
-    ))->withCookie(Cookie::make(
-        name: 'session_id',
-        value: $result['session_id'],
-        minutes: 60 * 24 * 14,
-        path: '/',
-        secure: ! app()->environment('local'),
-        httpOnly: true,
-        sameSite: 'lax'
-    ));
-}
+        return response()->json([
+            'status' => 'success',
+            'access_token' => $accessToken,
+            'user' => $result['user'],
+        ])->withCookie(Cookie::make(
+            name: 'refresh_token',
+            value: $result['refresh_token'],
+            minutes: $this->sessionCookieMinutes(),
+            path: '/',
+            secure: ! app()->environment('local'),
+            httpOnly: true,
+            sameSite: 'lax'
+        ))->withCookie(Cookie::make(
+            name: 'session_id',
+            value: $result['session_id'],
+            minutes: $this->sessionCookieMinutes(),
+            path: '/',
+            secure: ! app()->environment('local'),
+            httpOnly: true,
+            sameSite: 'lax'
+        ));
+    }
 
-public function me()
+    public function me()
     {
         $user = auth('api')->user();
 
@@ -156,31 +156,31 @@ public function me()
 
         $accessToken = JWTAuth::fromUser($user);
 
-  return response()->json([
-    'access_token' => $accessToken,
-])->withCookie(Cookie::make(
-    name: 'refresh_token',
-    value: $rotated['refresh_token'],
-    minutes: 60 * 24 * 14,
-    path: '/',
-    secure: ! app()->environment('local'),
-    httpOnly: true,
-    sameSite: 'lax'
-))->withCookie(Cookie::make(
-    name: 'session_id',
-    value: $rotated['session_id'],
-    minutes: 60 * 24 * 14,
-    path: '/',
-    secure: ! app()->environment('local'),
-    httpOnly: true,
-    sameSite: 'lax'
-));
+        return response()->json([
+            'access_token' => $accessToken,
+        ])->withCookie(Cookie::make(
+            name: 'refresh_token',
+            value: $rotated['refresh_token'],
+            minutes: $this->sessionCookieMinutes(),
+            path: '/',
+            secure: ! app()->environment('local'),
+            httpOnly: true,
+            sameSite: 'lax'
+        ))->withCookie(Cookie::make(
+            name: 'session_id',
+            value: $rotated['session_id'],
+            minutes: $this->sessionCookieMinutes(),
+            path: '/',
+            secure: ! app()->environment('local'),
+            httpOnly: true,
+            sameSite: 'lax'
+        ));
     }
 
     public function logout(Request $request)
     {
 
-    $sessionId = $request->cookie('session_id');
+        $sessionId = $request->cookie('session_id');
 
         if ($sessionId !== null) {
             $this->authSessionService->revoke($sessionId);
@@ -200,5 +200,10 @@ public function me()
         return response()->json(['message' => 'Logged out of all sessions.'])
             ->withoutCookie('refresh_token')
             ->withoutCookie('session_id');
+    }
+
+    protected function sessionCookieMinutes(): int
+    {
+        return config('auth_session.absolute_ttl_days') * 24 * 60;
     }
 }
