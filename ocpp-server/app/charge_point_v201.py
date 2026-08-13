@@ -90,26 +90,27 @@ class BorneOpsChargePoint201(ChargePoint201):
         **kwargs,
     ):
         transaction_id = transaction_info.get("transaction_id")
-        # Real OCPP 2.0.1 chargers commonly omit connectorId when an EVSE
-        # has exactly one connector — connectorId is optional per spec for
-        # exactly this case. Falling back to the EVSE's own id treats that
-        # single connector as sharing the EVSE's numbering, which matches
-        # this project's EVSE-per-single-connector test setup. A charger
-        # with genuinely multiple connectors per EVSE would need the real
-        # ocpp_evse_id/ocpp_connector_id mapping (decision #18 columns,
-        # not yet wired into a lookup) — documented as a follow-up.
-        connector_number = None
-        if evse:
-            connector_number = evse.get("connector_id")
-            if connector_number is None:
-                connector_number = evse.get("id")
+
+        # This gateway has no database access and therefore no way to
+        # legitimately resolve which BorneOPS connector an (evse_id,
+        # connector_id) pair refers to. That resolution — including
+        # rejecting genuinely ambiguous cases rather than guessing — is
+        # Laravel's job, using the real ocpp_evse_id/ocpp_connector_id
+        # columns. This handler only relays what the charger actually sent.
+        # connector_id is optional per the OCPP 2.0.1 spec when an EVSE has
+        # exactly one connector; it is passed through as None when absent
+        # rather than being defaulted to anything here.
+        evse_id = evse.get("id") if evse else None
+        connector_id = evse.get("connector_id") if evse else None
+
         energy_wh = extract_energy_wh_v201(meter_value) if meter_value else None
 
         if event_type == "Started":
             try:
                 await bridge_client.send_start_transaction_external(
                     self.id,
-                    connector_number,
+                    evse_id,
+                    connector_id,
                     transaction_id,
                     energy_wh if energy_wh is not None else 0,
                 )

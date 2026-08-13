@@ -245,14 +245,34 @@ public function startTransactionExternal(StartTransactionExternalEventRequest $r
             ], 404);
         }
 
-        $connector = Connector::where('charging_station_id', $station->id)
-            ->where('connector_number', $validated['connector_number'])
-            ->first();
+        $connectorsAtEvse = Connector::where('charging_station_id', $station->id)
+            ->where('ocpp_evse_id', $validated['evse_id'])
+            ->get();
 
-        if ($connector === null) {
-            return response()->json([
-                'message' => "No connector number {$validated['connector_number']} found on station '{$validated['ocpp_identifier']}'.",
-            ], 404);
+        $connectorId = $validated['connector_id'] ?? null;
+
+        if ($connectorId !== null) {
+            $connector = $connectorsAtEvse->firstWhere('ocpp_connector_id', $connectorId);
+
+            if ($connector === null) {
+                return response()->json([
+                    'message' => "No connector found for EVSE {$validated['evse_id']} / connector {$connectorId} on station '{$validated['ocpp_identifier']}'.",
+                ], 404);
+            }
+        } else {
+            if ($connectorsAtEvse->isEmpty()) {
+                return response()->json([
+                    'message' => "No connector found for EVSE {$validated['evse_id']} on station '{$validated['ocpp_identifier']}'.",
+                ], 404);
+            }
+
+            if ($connectorsAtEvse->count() > 1) {
+                return response()->json([
+                    'message' => "EVSE {$validated['evse_id']} on station '{$validated['ocpp_identifier']}' has multiple connectors and no connector_id was supplied. Addressing is ambiguous.",
+                ], 409);
+            }
+
+            $connector = $connectorsAtEvse->first();
         }
 
         $session = $this->sessionService->bindExternalTransactionId(
