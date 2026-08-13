@@ -13,6 +13,10 @@ from app.bridge_client import BridgeClientError
 from app.meter_values import extract_energy_wh
 from app.stop_reason import map_stop_reason
 
+from app.reconciliation import log_unreconciled_stop
+
+
+
 logger = logging.getLogger("ocpp-gateway")
 
 
@@ -130,19 +134,37 @@ class BorneOpsChargePoint16(ChargePoint16):
                 reason_code,
             )
         except BridgeClientError as e:
-            logger.warning(f"StopTransaction bridge call failed for {self.id}: {e}")
+            # OCPP 1.6's StopTransaction response has no field to signal
+            # rejection to the charger — the acknowledgment below is always
+            # required regardless of outcome. send_stop_transaction() has
+            # already retried transient/5xx failures internally; if it still
+            # failed, this is durably logged for reconciliation rather than
+            # silently lost to a single warning line.
+            log_unreconciled_stop(self.id, str(transaction_id), meter_stop, reason_code, str(e))
 
         return call_result.StopTransaction()
 
 
 def _map_ocpp_status(ocpp_status: str) -> str:
+    # "Preparing" and "Finishing" are deliberately NOT mapped to "occupied".
+    # Per the frozen roadmap decision #7, occupancy is ChargingSessionService's
+    # exclusive concern — StatusNotification must never preemptively set
+    # occupied ahead of a real transaction-start. "Preparing" fires before
+    # StartTransaction arrives (cable connected, session not yet begun);
+    # mapping it to occupied would incorrectly block the legitimate
+    # StartTransaction that follows it. "Finishing" fires after
+    # StopTransaction, once complete() has already released the connector
+    # back to available — mapping it to occupied would incorrectly re-lock
+    # an already-completed connector. "Charging"/"SuspendedEVSE"/"SuspendedEV"
+    # occur strictly mid-transaction, after start() has already set occupied,
+    # so mapping them to occupied here is redundant but harmless.
     mapping = {
         "Available": "available",
-        "Preparing": "occupied",
+        "Preparing": "available",
         "Charging": "occupied",
         "SuspendedEVSE": "occupied",
         "SuspendedEV": "occupied",
-        "Finishing": "occupied",
+        "Finishing": "available",
         "Reserved": "occupied",
         "Unavailable": "out_of_service",
         "Faulted": "fault",

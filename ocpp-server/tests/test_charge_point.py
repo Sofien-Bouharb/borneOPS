@@ -92,11 +92,11 @@ async def test_status_notification_connector_level_passes_connector_number(charg
 
 @pytest.mark.parametrize("ocpp_status,expected", [
     ("Available", "available"),
-    ("Preparing", "occupied"),
+    ("Preparing", "available"),
     ("Charging", "occupied"),
     ("SuspendedEVSE", "occupied"),
     ("SuspendedEV", "occupied"),
-    ("Finishing", "occupied"),
+    ("Finishing", "available"),
     ("Reserved", "occupied"),
     ("Unavailable", "out_of_service"),
     ("Faulted", "fault"),

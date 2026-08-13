@@ -15,6 +15,7 @@ use Illuminate\Http\JsonResponse;
 use App\Http\Requests\Ocpp\MeterValuesEventRequest;
 use App\Http\Requests\Ocpp\StopTransactionEventRequest;
 use App\Http\Requests\Ocpp\StartTransactionExternalEventRequest;
+use App\Http\Requests\Ocpp\VerifyStationCredentialRequest;
 
 
 class OcppBridgeController extends Controller
@@ -23,6 +24,37 @@ class OcppBridgeController extends Controller
         protected StationMonitoringService $monitoringService,
         protected ChargingSessionService $sessionService,
     ) {
+    }
+
+
+
+public function verifyStationCredential(VerifyStationCredentialRequest $request): JsonResponse
+    {
+        $validated = $request->validated();
+
+        $station = ChargingStation::where('ocpp_identifier', $validated['ocpp_identifier'])->first();
+
+        if ($station === null) {
+            return response()->json(['authorized' => false, 'reason' => 'unknown_station'], 200);
+        }
+
+        if ($station->administrative_status === 'decommissioned') {
+            return response()->json(['authorized' => false, 'reason' => 'station_decommissioned'], 200);
+        }
+
+        if ($station->ocpp_auth_password_hash === null) {
+            return response()->json(['authorized' => false, 'reason' => 'no_credential_configured'], 200);
+        }
+
+        if (!\Illuminate\Support\Facades\Hash::check($validated['password'], $station->ocpp_auth_password_hash)) {
+            return response()->json(['authorized' => false, 'reason' => 'invalid_credential'], 200);
+        }
+
+        if ($station->ocpp_version !== $validated['negotiated_version']) {
+            return response()->json(['authorized' => false, 'reason' => 'version_mismatch'], 200);
+        }
+
+        return response()->json(['authorized' => true], 200);
     }
 
     public function heartbeat(HeartbeatEventRequest $request): JsonResponse
@@ -221,14 +253,34 @@ public function startTransactionExternal(StartTransactionExternalEventRequest $r
             ], 404);
         }
 
-        $connector = Connector::where('charging_station_id', $station->id)
-            ->where('connector_number', $validated['connector_number'])
-            ->first();
+        $connectorsAtEvse = Connector::where('charging_station_id', $station->id)
+            ->where('ocpp_evse_id', $validated['evse_id'])
+            ->get();
 
-        if ($connector === null) {
-            return response()->json([
-                'message' => "No connector number {$validated['connector_number']} found on station '{$validated['ocpp_identifier']}'.",
-            ], 404);
+        $connectorId = $validated['connector_id'] ?? null;
+
+        if ($connectorId !== null) {
+            $connector = $connectorsAtEvse->firstWhere('ocpp_connector_id', $connectorId);
+
+            if ($connector === null) {
+                return response()->json([
+                    'message' => "No connector found for EVSE {$validated['evse_id']} / connector {$connectorId} on station '{$validated['ocpp_identifier']}'.",
+                ], 404);
+            }
+        } else {
+            if ($connectorsAtEvse->isEmpty()) {
+                return response()->json([
+                    'message' => "No connector found for EVSE {$validated['evse_id']} on station '{$validated['ocpp_identifier']}'.",
+                ], 404);
+            }
+
+            if ($connectorsAtEvse->count() > 1) {
+                return response()->json([
+                    'message' => "EVSE {$validated['evse_id']} on station '{$validated['ocpp_identifier']}' has multiple connectors and no connector_id was supplied. Addressing is ambiguous.",
+                ], 409);
+            }
+
+            $connector = $connectorsAtEvse->first();
         }
 
         $session = $this->sessionService->bindExternalTransactionId(

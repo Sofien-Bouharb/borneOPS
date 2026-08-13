@@ -48,7 +48,7 @@ async def test_stop_transaction_defaults_to_other_when_reason_missing(charge_poi
 async def test_stop_transaction_still_acknowledges_when_bridge_call_fails(charge_point):
     with patch(
         "app.charge_point.bridge_client.send_stop_transaction",
-        new=AsyncMock(side_effect=BridgeClientError(409, "Conflict")),
+        new=AsyncMock(side_effect=BridgeClientError(503, "Could not reach Laravel bridge")),
     ):
         result = await charge_point.on_stop_transaction(
             meter_stop=3500,
@@ -58,6 +58,23 @@ async def test_stop_transaction_still_acknowledges_when_bridge_call_fails(charge
         )
 
     assert result is not None
+
+
+@pytest.mark.asyncio
+async def test_stop_transaction_durably_logs_for_reconciliation_when_bridge_call_fails(charge_point):
+    with patch(
+        "app.charge_point.bridge_client.send_stop_transaction",
+        new=AsyncMock(side_effect=BridgeClientError(503, "Could not reach Laravel bridge")),
+    ):
+        with patch("app.charge_point.log_unreconciled_stop") as mock_log:
+            await charge_point.on_stop_transaction(
+                meter_stop=3500,
+                timestamp="2026-08-11T15:00:00Z",
+                transaction_id=25,
+                reason="Remote",
+            )
+
+    mock_log.assert_called_once_with("TEST-CP-001", "25", 3500, "remote_stop", "Bridge call failed (503): Could not reach Laravel bridge")
 
 
 @pytest.mark.asyncio

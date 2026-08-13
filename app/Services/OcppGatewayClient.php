@@ -30,10 +30,16 @@ class OcppGatewayClient
         ]);
     }
 
-    public function unlockConnector(ChargingStation $station, int $connectorNumber): array
-    {
+    public function unlockConnector(
+        ChargingStation $station,
+        int $connectorNumber,
+        ?int $evseId = null,
+        ?int $ocppConnectorId = null
+    ): array {
         return $this->post($station, 'unlock-connector', [
             'connector_number' => $connectorNumber,
+            'evse_id' => $evseId,
+            'connector_id' => $ocppConnectorId,
         ]);
     }
 
@@ -56,6 +62,12 @@ class OcppGatewayClient
         if ($response->status() === 404) {
             throw new InvalidStateTransitionException(
                 "La borne '{$station->ocpp_identifier}' n'est pas actuellement connectée à la passerelle OCPP."
+            );
+        }
+
+        if ($response->status() === 422) {
+            throw new InvalidStateTransitionException(
+                $response->json('detail') ?? 'La commande OCPP a échoué : requête invalide.'
             );
         }
 

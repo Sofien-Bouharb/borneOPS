@@ -1,0 +1,261 @@
+<?php
+
+namespace Tests\Feature;
+
+use App\Models\ChargingStation;
+use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Support\Facades\Hash;
+use Tests\TestCase;
+
+class OcppBridgeCredentialVerificationTest extends TestCase
+{
+    use RefreshDatabase;
+
+    protected function bridgeHeaders(): array
+    {
+        return [
+            'X-OCPP-Bridge-Token' => config('services.ocpp_bridge.token'),
+        ];
+    }
+
+    public function test_verify_accepts_correct_credential(): void
+    {
+        $station = ChargingStation::factory()->create([
+            'ocpp_identifier' => 'CP-AUTH-001',
+            'ocpp_auth_password_hash' => Hash::make('correct-password'),
+            'ocpp_auth_updated_at' => now(),
+            'ocpp_version' => '1.6',
+            'administrative_status' => 'active',
+        ]);
+
+        $response = $this->postJson('/api/internal/ocpp/verify-station-credential', [
+            'ocpp_identifier' => 'CP-AUTH-001',
+            'password' => 'correct-password',
+            'negotiated_version' => '1.6',
+        ], $this->bridgeHeaders());
+
+        $response->assertStatus(200);
+        $response->assertJson(['authorized' => true]);
+    }
+
+    public function test_verify_rejects_wrong_credential(): void
+    {
+        ChargingStation::factory()->create([
+            'ocpp_identifier' => 'CP-AUTH-002',
+            'ocpp_auth_password_hash' => Hash::make('correct-password'),
+            'ocpp_auth_updated_at' => now(),
+            'ocpp_version' => '1.6',
+            'administrative_status' => 'active',
+        ]);
+
+        $response = $this->postJson('/api/internal/ocpp/verify-station-credential', [
+            'ocpp_identifier' => 'CP-AUTH-002',
+            'password' => 'wrong-password',
+            'negotiated_version' => '1.6',
+        ], $this->bridgeHeaders());
+
+        $response->assertStatus(200);
+        $response->assertJson(['authorized' => false, 'reason' => 'invalid_credential']);
+    }
+
+    public function test_verify_rejects_unknown_station(): void
+    {
+        $response = $this->postJson('/api/internal/ocpp/verify-station-credential', [
+            'ocpp_identifier' => 'CP-DOES-NOT-EXIST',
+            'password' => 'anything',
+            'negotiated_version' => '1.6',
+        ], $this->bridgeHeaders());
+
+        $response->assertStatus(200);
+        $response->assertJson(['authorized' => false, 'reason' => 'unknown_station']);
+    }
+
+    public function test_verify_rejects_soft_deleted_station_as_unknown(): void
+    {
+        $station = ChargingStation::factory()->create([
+            'ocpp_identifier' => 'CP-AUTH-SOFT-DELETED',
+            'ocpp_auth_password_hash' => Hash::make('correct-password'),
+            'ocpp_auth_updated_at' => now(),
+            'ocpp_version' => '1.6',
+            'administrative_status' => 'active',
+        ]);
+
+        $station->delete();
+
+        $response = $this->postJson('/api/internal/ocpp/verify-station-credential', [
+            'ocpp_identifier' => 'CP-AUTH-SOFT-DELETED',
+            'password' => 'correct-password',
+            'negotiated_version' => '1.6',
+        ], $this->bridgeHeaders());
+
+        $response->assertStatus(200);
+        $response->assertJson(['authorized' => false, 'reason' => 'unknown_station']);
+    }
+
+    public function test_verify_rejects_decommissioned_station(): void
+    {
+        ChargingStation::factory()->create([
+            'ocpp_identifier' => 'CP-AUTH-DECOMMISSIONED',
+            'ocpp_auth_password_hash' => Hash::make('correct-password'),
+            'ocpp_auth_updated_at' => now(),
+            'ocpp_version' => '1.6',
+            'administrative_status' => 'decommissioned',
+        ]);
+
+        $response = $this->postJson('/api/internal/ocpp/verify-station-credential', [
+            'ocpp_identifier' => 'CP-AUTH-DECOMMISSIONED',
+            'password' => 'correct-password',
+            'negotiated_version' => '1.6',
+        ], $this->bridgeHeaders());
+
+        $response->assertStatus(200);
+        $response->assertJson(['authorized' => false, 'reason' => 'station_decommissioned']);
+    }
+
+    public function test_verify_rejects_station_with_no_credential_configured(): void
+    {
+        ChargingStation::factory()->create([
+            'ocpp_identifier' => 'CP-AUTH-003',
+            'ocpp_auth_password_hash' => null,
+            'ocpp_version' => '1.6',
+            'administrative_status' => 'active',
+        ]);
+
+        $response = $this->postJson('/api/internal/ocpp/verify-station-credential', [
+            'ocpp_identifier' => 'CP-AUTH-003',
+            'password' => 'anything',
+            'negotiated_version' => '1.6',
+        ], $this->bridgeHeaders());
+
+        $response->assertStatus(200);
+        $response->assertJson(['authorized' => false, 'reason' => 'no_credential_configured']);
+    }
+
+    public function test_verify_rejects_1_6_station_negotiating_2_0_1(): void
+    {
+        ChargingStation::factory()->create([
+            'ocpp_identifier' => 'CP-AUTH-V16',
+            'ocpp_auth_password_hash' => Hash::make('correct-password'),
+            'ocpp_auth_updated_at' => now(),
+            'ocpp_version' => '1.6',
+            'administrative_status' => 'active',
+        ]);
+
+        $response = $this->postJson('/api/internal/ocpp/verify-station-credential', [
+            'ocpp_identifier' => 'CP-AUTH-V16',
+            'password' => 'correct-password',
+            'negotiated_version' => '2.0.1',
+        ], $this->bridgeHeaders());
+
+        $response->assertStatus(200);
+        $response->assertJson(['authorized' => false, 'reason' => 'version_mismatch']);
+    }
+
+    public function test_verify_rejects_2_0_1_station_negotiating_1_6(): void
+    {
+        ChargingStation::factory()->create([
+            'ocpp_identifier' => 'CP-AUTH-V201',
+            'ocpp_auth_password_hash' => Hash::make('correct-password'),
+            'ocpp_auth_updated_at' => now(),
+            'ocpp_version' => '2.0.1',
+            'administrative_status' => 'active',
+        ]);
+
+        $response = $this->postJson('/api/internal/ocpp/verify-station-credential', [
+            'ocpp_identifier' => 'CP-AUTH-V201',
+            'password' => 'correct-password',
+            'negotiated_version' => '1.6',
+        ], $this->bridgeHeaders());
+
+        $response->assertStatus(200);
+        $response->assertJson(['authorized' => false, 'reason' => 'version_mismatch']);
+    }
+
+    public function test_verify_accepts_2_0_1_station_negotiating_2_0_1(): void
+    {
+        ChargingStation::factory()->create([
+            'ocpp_identifier' => 'CP-AUTH-V201-MATCH',
+            'ocpp_auth_password_hash' => Hash::make('correct-password'),
+            'ocpp_auth_updated_at' => now(),
+            'ocpp_version' => '2.0.1',
+            'administrative_status' => 'active',
+        ]);
+
+        $response = $this->postJson('/api/internal/ocpp/verify-station-credential', [
+            'ocpp_identifier' => 'CP-AUTH-V201-MATCH',
+            'password' => 'correct-password',
+            'negotiated_version' => '2.0.1',
+        ], $this->bridgeHeaders());
+
+        $response->assertStatus(200);
+        $response->assertJson(['authorized' => true]);
+    }
+
+    public function test_verify_accepts_credential_after_rotation(): void
+    {
+        $station = ChargingStation::factory()->create([
+            'ocpp_identifier' => 'CP-AUTH-004',
+            'ocpp_auth_password_hash' => Hash::make('old-password'),
+            'ocpp_auth_updated_at' => now()->subDays(30),
+            'ocpp_version' => '1.6',
+            'administrative_status' => 'active',
+        ]);
+
+        $station->ocpp_auth_password_hash = Hash::make('new-password');
+        $station->ocpp_auth_updated_at = now();
+        $station->save();
+
+        $oldResponse = $this->postJson('/api/internal/ocpp/verify-station-credential', [
+            'ocpp_identifier' => 'CP-AUTH-004',
+            'password' => 'old-password',
+            'negotiated_version' => '1.6',
+        ], $this->bridgeHeaders());
+
+        $newResponse = $this->postJson('/api/internal/ocpp/verify-station-credential', [
+            'ocpp_identifier' => 'CP-AUTH-004',
+            'password' => 'new-password',
+            'negotiated_version' => '1.6',
+        ], $this->bridgeHeaders());
+
+        $oldResponse->assertJson(['authorized' => false]);
+        $newResponse->assertJson(['authorized' => true]);
+    }
+
+    public function test_verify_requires_all_fields(): void
+    {
+        $response = $this->postJson('/api/internal/ocpp/verify-station-credential', [], $this->bridgeHeaders());
+
+        $response->assertStatus(422);
+        $response->assertJsonValidationErrors(['ocpp_identifier', 'password', 'negotiated_version']);
+    }
+
+    public function test_verify_rejects_invalid_negotiated_version(): void
+    {
+        ChargingStation::factory()->create([
+            'ocpp_identifier' => 'CP-AUTH-005',
+            'ocpp_auth_password_hash' => Hash::make('correct-password'),
+            'ocpp_version' => '1.6',
+            'administrative_status' => 'active',
+        ]);
+
+        $response = $this->postJson('/api/internal/ocpp/verify-station-credential', [
+            'ocpp_identifier' => 'CP-AUTH-005',
+            'password' => 'correct-password',
+            'negotiated_version' => 'not-a-real-version',
+        ], $this->bridgeHeaders());
+
+        $response->assertStatus(422);
+        $response->assertJsonValidationErrors(['negotiated_version']);
+    }
+
+    public function test_verify_rejects_requests_without_bridge_token(): void
+    {
+        $response = $this->postJson('/api/internal/ocpp/verify-station-credential', [
+            'ocpp_identifier' => 'CP-AUTH-006',
+            'password' => 'anything',
+            'negotiated_version' => '1.6',
+        ]);
+
+        $response->assertStatus(401);
+    }
+}

@@ -151,4 +151,6 @@ Route::middleware('ocpp_bridge')->prefix('internal/ocpp')->group(function () {
     Route::post('/transactions/meter-values', [OcppBridgeController::class, 'meterValues']);
     Route::post('/transactions/stop', [OcppBridgeController::class, 'stopTransaction']);
     Route::post('/transactions/start-external', [OcppBridgeController::class, 'startTransactionExternal']);
+    Route::post('/verify-station-credential', [OcppBridgeController::class, 'verifyStationCredential']);
+
 });
