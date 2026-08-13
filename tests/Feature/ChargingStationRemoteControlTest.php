@@ -133,6 +133,51 @@ protected function setUp(): void
         $response->assertJson(['status' => 'Unlocked']);
     }
 
+    public function test_unlock_connector_forwards_evse_and_connector_id_when_present(): void
+    {
+        Http::fake([
+            '*/commands/*/unlock-connector' => Http::response(['status' => 'Unlocked'], 200),
+        ]);
+
+        $station = ChargingStation::factory()->create(['ocpp_identifier' => 'CP-013']);
+        $connector = Connector::factory()->create([
+            'charging_station_id' => $station->id,
+            'connector_number' => 1,
+            'ocpp_evse_id' => 2,
+            'ocpp_connector_id' => 1,
+        ]);
+        $user = $this->authorizedUser();
+
+        $response = $this->actingAs($user, 'api')
+            ->postJson("/api/charging-stations/{$station->id}/connectors/{$connector->id}/unlock");
+
+        $response->assertStatus(200);
+
+        Http::assertSent(function ($request) {
+            return str_contains($request->url(), '/unlock-connector')
+                && $request['evse_id'] === 2
+                && $request['connector_id'] === 1;
+        });
+    }
+
+    public function test_unlock_connector_surfaces_gateway_422_as_409(): void
+    {
+        Http::fake([
+            '*/commands/*/unlock-connector' => Http::response([
+                'detail' => 'evse_id and connector_id are both required to unlock a connector on an OCPP 2.0.1 station.',
+            ], 422),
+        ]);
+
+        $station = ChargingStation::factory()->create(['ocpp_identifier' => 'CP-014']);
+        $connector = Connector::factory()->create(['charging_station_id' => $station->id, 'connector_number' => 1]);
+        $user = $this->authorizedUser();
+
+        $response = $this->actingAs($user, 'api')
+            ->postJson("/api/charging-stations/{$station->id}/connectors/{$connector->id}/unlock");
+
+        $response->assertStatus(409);
+    }
+
     public function test_unlock_connector_returns_404_for_mismatched_station(): void
     {
         Http::fake();

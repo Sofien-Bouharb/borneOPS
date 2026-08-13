@@ -58,7 +58,12 @@ class ChargingStationRemoteControlController extends Controller
             abort(404);
         }
 
-        $result = $this->gatewayClient->unlockConnector($station, $connector->connector_number);
+        $result = $this->gatewayClient->unlockConnector(
+            $station,
+            $connector->connector_number,
+            $connector->ocpp_evse_id,
+            $connector->ocpp_connector_id,
+        );
 
         return response()->json($result);
     }
