@@ -29,14 +29,35 @@ class SiteTest extends TestCase
         $this->getJson('/api/sites')->assertStatus(401);
     }
 
-    public function test_client_role_cannot_view_sites(): void
+    public function test_client_role_with_no_organizations_sees_empty_sites(): void
     {
+        Site::factory()->create(['organization_id' => $this->organization->id]);
+
         $client = User::factory()->create();
         $client->assignRole('Client');
 
         $this->actingAs($client, 'api')
             ->getJson('/api/sites')
-            ->assertStatus(403);
+            ->assertStatus(200)
+            ->assertJsonCount(0, 'data');
+    }
+
+    public function test_client_role_sees_only_sites_for_own_organization(): void
+    {
+        $site = Site::factory()->create(['organization_id' => $this->organization->id]);
+
+        $otherOrganization = Organization::factory()->create();
+        Site::factory()->create(['organization_id' => $otherOrganization->id]);
+
+        $client = User::factory()->create();
+        $client->assignRole('Client');
+        $client->organizations()->attach($this->organization->id);
+
+        $this->actingAs($client, 'api')
+            ->getJson('/api/sites')
+            ->assertStatus(200)
+            ->assertJsonCount(1, 'data')
+            ->assertJsonPath('data.0.id', $site->id);
     }
 
     public function test_admin_can_list_sites(): void
