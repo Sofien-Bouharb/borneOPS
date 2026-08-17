@@ -106,6 +106,14 @@ class ChargingSessionService
      * since time may have passed and the station/connector state may have
      * drifted since the session was first created.
      *
+     * The connector/station occupied-status writes below always use
+     * source: 'system' — they are an automatic side-effect of the session
+     * lifecycle, never a human manually editing a dropdown, regardless of
+     * whether the session itself was started by a person or by OCPP. Since
+     * assertEligible() already requires the station to be OCPP-connected
+     * before a session can start, a 'user'-sourced write here would always
+     * be rejected by the OCPP-authoritative-status gate.
+     *
      * @throws InvalidStateTransitionException
      */
 public function start(
@@ -145,7 +153,7 @@ public function start(
                 'source' => $source,
                 'performed_by' => $performedBy?->id,
             ]);
-            $this->connectorService->updateOperationalStatus($connector, 'occupied');
+            $this->connectorService->updateOperationalStatus($connector, 'occupied', 'system');
             $this->chargingStationService->updateOperationalStatus(
                 $station,
                 'occupied',
@@ -413,6 +421,10 @@ public function start(
      * maintenance / out_of_service), and returns the station to 'available'
      * only once no other connector on it still has an open session (§8).
      *
+     * The connector release below uses source: 'system' for the same
+     * reason as start() — this is an automatic side-effect of the session
+     * ending, not a human manually editing the connector's dropdown.
+     *
      * @throws InvalidStateTransitionException
      */
     public function complete(
@@ -477,7 +489,7 @@ public function start(
 
             $connector = Connector::find($locked->connector_id);
             if ($connector !== null && $connector->operational_status === 'occupied') {
-                $this->connectorService->updateOperationalStatus($connector, 'available');
+                $this->connectorService->updateOperationalStatus($connector, 'available', 'system');
             }
 
             $station = ChargingStation::find($locked->charging_station_id);

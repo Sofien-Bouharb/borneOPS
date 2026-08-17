@@ -20,6 +20,7 @@ export interface ChargingStation {
   power_kw: string;
   operational_status: string;
   administrative_status: string;
+  connection_status: 'connected' | 'disconnected';
   site_id: number | null;
   created_at: string;
   updated_at: string;

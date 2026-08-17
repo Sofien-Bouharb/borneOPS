@@ -10,6 +10,11 @@ use App\Exceptions\InvalidStateTransitionException;
 
 class ChargingStationService
 {
+    public function __construct(
+        protected StationConnectionStatusService $connectionStatusService,
+    ) {
+    }
+
     public function create(array $data, ?User $performedBy): ChargingStation
     {
         return DB::transaction(function () use ($data, $performedBy) {
@@ -105,6 +110,12 @@ class ChargingStationService
         if ($station->trashed()) {
             throw new InvalidStateTransitionException(
                 'Une borne supprimée ne peut pas changer d\'état opérationnel.'
+            );
+        }
+
+        if ($source === 'user' && $this->connectionStatusService->connectionStatus($station) === 'connected') {
+            throw new InvalidStateTransitionException(
+                'Le statut opérationnel est géré automatiquement via OCPP tant que la borne est connectée.'
             );
         }
 
