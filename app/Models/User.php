@@ -7,6 +7,8 @@ use Database\Factories\UserFactory;
 use Illuminate\Database\Eloquent\Attributes\Fillable;
 use Illuminate\Database\Eloquent\Attributes\Hidden;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
+use Illuminate\Database\Eloquent\Relations\BelongsToMany;
+use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Notifications\Notifiable;
 use Tymon\JWTAuth\Contracts\JWTSubject;
@@ -24,18 +26,18 @@ class User extends Authenticatable implements JWTSubject
      *
      * @return array<string, string>
      */
-protected function casts(): array
-{
-    return [
-        'email_verified_at' => 'datetime',
-        'password' => 'hashed',
-        'locked_until' => 'datetime',
-        'last_login_at' => 'datetime',
-        'password_changed_at' => 'datetime',
-        'two_factor_enabled' => 'boolean',
-        'two_factor_secret' => 'encrypted',
-    ];
-}
+    protected function casts(): array
+    {
+        return [
+            'email_verified_at' => 'datetime',
+            'password' => 'hashed',
+            'locked_until' => 'datetime',
+            'last_login_at' => 'datetime',
+            'password_changed_at' => 'datetime',
+            'two_factor_enabled' => 'boolean',
+            'two_factor_secret' => 'encrypted',
+        ];
+    }
 
     /**
      * Get the identifier that will be stored in the subject claim of the JWT.
@@ -58,11 +60,21 @@ protected function casts(): array
     }
 
     public function sendPasswordResetNotification($token)
-{
-    $url = config('app.frontend_url')
-        . '/reset-password?token=' . $token
-        . '&email=' . urlencode($this->email);
+    {
+        $url = config('app.frontend_url')
+            . '/reset-password?token=' . $token
+            . '&email=' . urlencode($this->email);
 
-    $this->notify(new \App\Notifications\ResetPasswordNotification($url));
-}
+        $this->notify(new \App\Notifications\ResetPasswordNotification($url));
+    }
+
+    public function organizations(): BelongsToMany
+    {
+        return $this->belongsToMany(Organization::class);
+    }
+
+    public function histories(): HasMany
+    {
+        return $this->hasMany(UserHistory::class);
+    }
 }

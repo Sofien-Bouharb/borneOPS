@@ -52,7 +52,7 @@ class AuthenticationService
         return $this->issueSession($user);
     }
 
-    protected function isPrivilegedRole(User $user): bool
+    public function isPrivilegedRole(User $user): bool
     {
         return $user->hasAnyRole(['Super Administrator', 'Exploitant', 'Finance']);
     }
