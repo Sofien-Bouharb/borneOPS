@@ -2,6 +2,7 @@
 
 namespace App\Http\Resources;
 
+use App\Services\StationConnectionStatusService;
 use Illuminate\Http\Request;
 use Illuminate\Http\Resources\Json\JsonResource;
 
@@ -31,6 +32,7 @@ class ChargingStationResource extends JsonResource
             'power_kw' => $this->power_kw,
             'operational_status' => $this->operational_status,
             'administrative_status' => $this->administrative_status,
+            'connection_status' => app(StationConnectionStatusService::class)->connectionStatus($this->resource),
             'site_id' => $this->site_id,
             'site' => new SiteResource($this->whenLoaded('site')),
             'histories' => ChargingStationHistoryResource::collection($this->whenLoaded('histories')),

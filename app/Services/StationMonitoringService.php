@@ -14,6 +14,7 @@ class StationMonitoringService
     public function __construct(
         protected ChargingStationService $chargingStationService,
         protected ConnectorService $connectorService,
+        protected StationConnectionStatusService $connectionStatusService,
     ) {
     }
 
@@ -78,22 +79,16 @@ class StationMonitoringService
     /**
      * Derive a station's current connection status from last_heartbeat_at.
      *
-     * This is the single source of truth for connection status. It is never
-     * stored as a boolean column — it is always computed at read time.
-     * A heartbeat exactly at the timeout boundary counts as connected.
+     * Delegates to StationConnectionStatusService, the single source of
+     * truth for connection status shared by ChargingStationService and
+     * ConnectorService as well. Kept here as a thin backward-compatible
+     * wrapper so existing callers (SimulateChargingSessions,
+     * SupervisionStationResource, SupervisionDashboardService,
+     * ChargingSessionService, and this class itself) are unaffected.
      */
     public function connectionStatus(ChargingStation $station): string
     {
-        if ($station->last_heartbeat_at === null) {
-            return 'disconnected';
-        }
-
-        $timeoutSeconds = (int) config('monitoring.heartbeat_timeout_seconds');
-        $cutoff = now()->subSeconds($timeoutSeconds);
-
-        return $station->last_heartbeat_at->greaterThanOrEqualTo($cutoff)
-            ? 'connected'
-            : 'disconnected';
+        return $this->connectionStatusService->connectionStatus($station);
     }
 
     /**
@@ -160,10 +155,17 @@ class StationMonitoringService
      * Broadcasts the parent station, not the connector, since
      * StationMonitoringUpdated / SupervisionStationResource is the single
      * canonical station shape shared by the dashboard and this event.
+     *
+     * Explicitly passes source: 'ocpp' since this write originates from
+     * real OCPP StatusNotification traffic, not a human dropdown.
      */
     public function recordConnectorOperationalStatus(Connector $connector, string $operationalStatus): Connector
     {
-        $connector = $this->connectorService->updateOperationalStatus($connector, $operationalStatus);
+        $connector = $this->connectorService->updateOperationalStatus(
+            $connector,
+            $operationalStatus,
+            source: 'ocpp'
+        );
 
         $station = ChargingStation::find($connector->charging_station_id);
 

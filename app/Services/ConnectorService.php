@@ -8,6 +8,11 @@ use App\Models\Connector;
 
 class ConnectorService
 {
+    public function __construct(
+        protected StationConnectionStatusService $connectionStatusService,
+    ) {
+    }
+
     /**
      * Create a new connector under the given charging station.
      *
@@ -125,13 +130,21 @@ class ConnectorService
      * No same-state check here: resubmitting the same operational_status is
      * allowed and simply results in isDirty() being false, no write, no error.
      *
+     * $source defaults to 'user' so the existing ConnectorController call
+     * site is unaffected. When $source is 'user' and the parent station is
+     * currently OCPP-connected, manual writes are rejected — the gate is
+     * station-level: the connector's own operational_status is irrelevant to
+     * it, only the parent station's connection_status matters. OCPP/system
+     * writes always bypass this gate.
+     *
      * @param  Connector  $connector
      * @param  string  $operationalStatus
+     * @param  string  $source
      * @return Connector
      *
      * @throws InvalidStateTransitionException
      */
-    public function updateOperationalStatus(Connector $connector, string $operationalStatus): Connector
+    public function updateOperationalStatus(Connector $connector, string $operationalStatus, string $source = 'user'): Connector
     {
         if ($connector->trashed()) {
             throw new InvalidStateTransitionException(
@@ -144,6 +157,12 @@ class ConnectorService
         if ($station->administrative_status === 'decommissioned') {
             throw new InvalidStateTransitionException(
                 "Impossible de modifier l'état opérationnel d'un connecteur dont la borne est décommissionnée."
+            );
+        }
+
+        if ($source === 'user' && $this->connectionStatusService->connectionStatus($station) === 'connected') {
+            throw new InvalidStateTransitionException(
+                'Le statut opérationnel est géré automatiquement via OCPP tant que la borne est connectée.'
             );
         }
 

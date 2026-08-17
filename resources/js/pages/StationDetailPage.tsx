@@ -91,6 +91,7 @@ export default function StationDetailPage() {
   const isCommissioning = station.administrative_status === 'commissioning';
   const isActive = station.administrative_status === 'active';
   const isDisabled = station.administrative_status === 'disabled';
+  const isOcppConnected = station.connection_status === 'connected';
 
  const doAction = async (action: string, payload: Record<string, unknown>) => {
     try {
@@ -148,7 +149,7 @@ export default function StationDetailPage() {
                     </Button>
                   </Popconfirm>
                 )}
-                {canStateUpdate && (
+                {canStateUpdate && !isOcppConnected && (
                   <Button className="station-action--neutral" icon={<ThunderboltOutlined />} onClick={() => setModal('state')}>
                     État opérationnel
                   </Button>
@@ -197,6 +198,15 @@ export default function StationDetailPage() {
           />
         )}
 
+        {canStateUpdate && isOcppConnected && (
+          <Alert
+            className="station-form-alert"
+            type="info"
+            message="Statut géré automatiquement via OCPP tant que la borne est connectée."
+            showIcon
+          />
+        )}
+
         <Card className="station-info-card">
           <Descriptions className="station-descriptions" column={{ xs: 1, sm: 2 }} bordered size="small">
             <Descriptions.Item label="Référence">{station.reference}</Descriptions.Item>
@@ -229,6 +239,7 @@ export default function StationDetailPage() {
           stationId={stationId}
           stationAdministrativeStatus={station.administrative_status}
           stationPowerKw={station.power_kw}
+          stationConnectionStatus={station.connection_status}
         />
 
         <section className="station-history-section">

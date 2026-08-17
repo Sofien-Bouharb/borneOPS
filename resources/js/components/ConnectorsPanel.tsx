@@ -38,6 +38,7 @@ interface ConnectorsPanelProps {
   stationId: number;
   stationAdministrativeStatus: string;
   stationPowerKw: string;
+  stationConnectionStatus: 'connected' | 'disconnected';
 }
 
 type ModalMode =
@@ -54,6 +55,7 @@ export default function ConnectorsPanel({
   stationId,
   stationAdministrativeStatus,
   stationPowerKw,
+  stationConnectionStatus,
 }: ConnectorsPanelProps) {
   const { data: connectors, isLoading } = useConnectors(stationId);
   const createMutation = useCreateConnector();
@@ -74,6 +76,7 @@ export default function ConnectorsPanel({
 
   const isCommissioning = stationAdministrativeStatus === 'commissioning';
   const isDecommissioned = stationAdministrativeStatus === 'decommissioned';
+  const isOcppConnected = stationConnectionStatus === 'connected';
 
   const openCreate = () => {
     form.resetFields();
@@ -210,7 +213,7 @@ export default function ConnectorsPanel({
               Modifier
             </Button>
           )}
-          {canStateUpdate && !isDecommissioned && (
+          {canStateUpdate && !isDecommissioned && !isOcppConnected && (
             <Button size="small" icon={<ThunderboltOutlined />} onClick={() => openState(connector)}>
               État
             </Button>
@@ -270,6 +273,15 @@ export default function ConnectorsPanel({
             showIcon
             style={{ marginBottom: 16 }}
             message="La configuration physique des connecteurs (ajout, modification, suppression) n'est possible que lorsque la borne est en mise en service."
+          />
+        )}
+        {isOcppConnected && (
+          <Alert
+            className="station-connectors-alert"
+            type="info"
+            showIcon
+            style={{ marginBottom: 16 }}
+            message="L'état opérationnel des connecteurs est géré automatiquement via OCPP tant que la borne est connectée."
           />
         )}
         <Table
