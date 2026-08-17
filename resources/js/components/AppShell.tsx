@@ -10,6 +10,7 @@ import {
     ApartmentOutlined,
     EnvironmentOutlined,
     UserOutlined,
+    TeamOutlined,
     MenuOutlined,
     LogoutOutlined,
     DownOutlined,
@@ -35,6 +36,7 @@ const NAV_ITEMS: NavItem[] = [
     { key: '/charging-sessions', label: 'Sessions de recharge', icon: <PlayCircleOutlined />, permission: 'charging_sessions.view' },
     { key: '/organizations', label: 'Organisations', icon: <ApartmentOutlined />, permission: 'organizations.view' },
     { key: '/sites', label: 'Sites', icon: <EnvironmentOutlined />, permission: 'sites.view' },
+    { key: '/users', label: 'Utilisateurs', icon: <TeamOutlined />, permission: 'users.view' },
 ];
 
 export default function AppShell({ children }: { children: ReactNode }) {
