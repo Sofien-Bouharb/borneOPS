@@ -10,11 +10,13 @@ use App\Http\Resources\ConnectorResource;
 use App\Models\ChargingStation;
 use App\Models\Connector;
 use App\Services\ConnectorService;
+use App\Services\OrganizationAccessService;
 
 class ConnectorController extends Controller
 {
     public function __construct(
-        protected ConnectorService $connectorService
+        protected ConnectorService $connectorService,
+        protected OrganizationAccessService $organizationAccessService,
     ) {
     }
 
@@ -27,6 +29,8 @@ class ConnectorController extends Controller
      */
     public function index(ChargingStation $station)
     {
+        $this->ensureStationAccessible($station);
+
         $connectors = $station->connectors()->with('chargingStation')->get();
 
         return ConnectorResource::collection($connectors);
@@ -52,6 +56,7 @@ class ConnectorController extends Controller
      */
     public function show(ChargingStation $station, Connector $connector)
     {
+        $this->ensureStationAccessible($station);
         $this->ensureConnectorBelongsToStation($station, $connector);
 
         $connector->load('chargingStation');
@@ -141,6 +146,19 @@ class ConnectorController extends Controller
     {
         if ($connector->charging_station_id !== $station->id) {
             abort(404, "Ce connecteur n'appartient pas à cette borne.");
+        }
+    }
+
+    /**
+     * Module 6: a Client-role user must not be able to list or view
+     * connectors belonging to a station outside their organization, even
+     * though connectors.view has no organization link of their own —
+     * access is always derived from the parent station.
+     */
+    private function ensureStationAccessible(ChargingStation $station): void
+    {
+        if (!$this->organizationAccessService->canAccessStation(auth()->user(), $station)) {
+            abort(404, "Cette borne n'existe pas.");
         }
     }
 }

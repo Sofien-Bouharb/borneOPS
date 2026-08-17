@@ -11,12 +11,15 @@ use App\Http\Requests\StoreChargingSessionRequest;
 use App\Http\Resources\ChargingSessionResource;
 use App\Models\ChargingSession;
 use App\Services\ChargingSessionService;
+use App\Services\OrganizationAccessService;
 use Illuminate\Http\Request;
+use Symfony\Component\HttpKernel\Exception\NotFoundHttpException;
 
 class ChargingSessionController extends Controller
 {
     public function __construct(
-        protected ChargingSessionService $chargingSessionService
+        protected ChargingSessionService $chargingSessionService,
+        protected OrganizationAccessService $organizationAccessService,
     ) {
     }
 
@@ -32,6 +35,8 @@ class ChargingSessionController extends Controller
     public function index(Request $request)
     {
         $query = ChargingSession::query()->with(['chargingStation', 'connector', 'customer']);
+
+        $query = $this->organizationAccessService->scopeChargingSessions($query, auth()->user());
 
         if ($request->filled('status')) {
             $query->where('status', $request->input('status'));
@@ -79,6 +84,10 @@ class ChargingSessionController extends Controller
      */
     public function show(ChargingSession $session)
     {
+        if (!$this->organizationAccessService->canAccessChargingSession(auth()->user(), $session)) {
+            throw new NotFoundHttpException();
+        }
+
         $session->load(['chargingStation', 'connector', 'customer']);
 
         return new ChargingSessionResource($session);

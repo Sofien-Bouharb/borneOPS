@@ -84,6 +84,8 @@ class RolesAndPermissionsSeeder extends Seeder
 
         $rolePermissions = [
             'Super Administrator' => [
+                'users.view', 'users.create', 'users.update', 'users.disable',
+                'roles.view', 'roles.manage',
                 'charging_stations.view', 'charging_stations.create', 'charging_stations.update',
                 'charging_stations.state.update', 'charging_stations.lifecycle.update',
                 'charging_stations.decommission', 'charging_stations.assign', 'charging_stations.history.view',
@@ -97,6 +99,8 @@ class RolesAndPermissionsSeeder extends Seeder
                 'charging_sessions.pause', 'charging_sessions.end', 'charging_sessions.cancel',
             ],
             'Exploitant' => [
+                'users.view', 'users.create', 'users.update', 'users.disable',
+                'roles.view',
                 'charging_stations.view', 'charging_stations.create', 'charging_stations.update',
                 'charging_stations.state.update', 'charging_stations.lifecycle.update',
                 'charging_stations.decommission', 'charging_stations.assign', 'charging_stations.history.view',
@@ -135,6 +139,7 @@ class RolesAndPermissionsSeeder extends Seeder
                 'charging_sessions.view',
             ],
             'Service Client' => [
+                'users.view', 'users.update', 'users.disable',
                 'charging_stations.view',
                 'charging_stations.history.view',
                 'connectors.view',
@@ -148,7 +153,8 @@ class RolesAndPermissionsSeeder extends Seeder
                 'charging_sessions.view',
             ],
             'Client' => [
-                // No access — deferred until organization_user scoping exists (Module 6).
+                'organizations.view', 'sites.view', 'charging_stations.view',
+                'connectors.view', 'supervision.view', 'charging_sessions.view',
             ],
         ];
 

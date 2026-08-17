@@ -13,7 +13,7 @@ use App\Http\Controllers\SupervisionController;
 use App\Http\Controllers\ChargingSessionController;
 use App\Http\Controllers\Ocpp\OcppBridgeController;
 use App\Http\Controllers\ChargingStationRemoteControlController;
-
+use App\Http\Controllers\UserController;
 
 Route::post('/login', [AuthController::class, 'login'])
     ->middleware('throttle:login');
@@ -33,12 +33,34 @@ Route::post('/forgot-password', [PasswordResetController::class, 'forgot'])
 Route::post('/reset-password', [PasswordResetController::class, 'reset'])
     ->middleware('throttle:forgot-password');
 
-Route::middleware('auth:api')->group(function () {
+Route::middleware(['auth:api', 'account.active'])->group(function () {
     Route::get('/me', [AuthController::class, 'me']);
     Route::post('/logout', [AuthController::class, 'logout']);
     Route::post('/logout-all', [AuthController::class, 'logoutAll']);
     Route::get('/sessions', [SessionController::class, 'index']);
     Route::delete('/sessions/{sessionId}', [SessionController::class, 'destroy']);
+
+        // --- Module 6: User Management ---
+    Route::get('/users', [UserController::class, 'index'])
+        ->middleware('permission:users.view');
+    Route::post('/users', [UserController::class, 'store'])
+        ->middleware('permission:users.create');
+    Route::get('/users/{user}', [UserController::class, 'show'])
+        ->middleware('permission:users.view');
+    Route::patch('/users/{user}', [UserController::class, 'update'])
+        ->middleware('permission:users.update');
+    Route::patch('/users/{user}/account-status', [UserController::class, 'updateAccountStatus'])
+        ->middleware('permission:users.disable');
+    Route::patch('/users/{user}/role', [UserController::class, 'assignRole'])
+        ->middleware('permission:users.update');
+    Route::patch('/users/{user}/organizations', [UserController::class, 'syncOrganizations'])
+        ->middleware('permission:users.update');
+    Route::post('/users/{user}/password-setup-link', [UserController::class, 'resendPasswordSetupLink'])
+        ->middleware(['permission:users.update', 'throttle:password-setup-resend']);
+    Route::get('/users/{user}/history', [UserController::class, 'history'])
+        ->middleware('permission:users.view');
+
+
 
     // --- Broadcasting authorization (private/presence channels) ---
     Broadcast::routes(['middleware' => ['auth:api']]);
