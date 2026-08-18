@@ -54,8 +54,7 @@ async def test_status_notification_always_carries_a_connector_number(charge_poin
 
 @pytest.mark.asyncio
 async def test_authorize_accepts_valid_token(charge_point):
-    charge_point.authorization_provider.is_authorized = lambda tag: True
-
+    charge_point.authorization_provider.is_authorized = AsyncMock(return_value=True)
     result = await charge_point.on_authorize(id_token={"id_token": "TAG-DRIVER-001", "type": "ISO14443"})
 
     assert result.id_token_info.status == "Accepted"
@@ -63,8 +62,7 @@ async def test_authorize_accepts_valid_token(charge_point):
 
 @pytest.mark.asyncio
 async def test_authorize_rejects_invalid_token(charge_point):
-    charge_point.authorization_provider.is_authorized = lambda tag: False
-
+    charge_point.authorization_provider.is_authorized = AsyncMock(return_value=False)
     result = await charge_point.on_authorize(id_token={"id_token": "TAG-UNKNOWN", "type": "ISO14443"})
 
     assert result.id_token_info.status == "Invalid"

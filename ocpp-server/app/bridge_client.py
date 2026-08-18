@@ -54,6 +54,21 @@ async def verify_station_credential(ocpp_identifier: str, password: str, negotia
     return result.get("authorized", False)
 
 
+async def send_authorize(ocpp_identifier: str, identifier: str) -> dict:
+    """
+    Asks Laravel whether a presented RFID credential is currently allowed
+    to authorize at the given station. Uses the plain _post() (not
+    _post_with_retry()) deliberately: this is a real-time OCPP Authorize.req
+    that a driver is waiting on at the charger, so it must fail fast rather
+    than retry — RfidAuthorizationProvider (app/rfid_authorization.py) is
+    responsible for treating any BridgeClientError from this call as a
+    fail-closed rejection, not for retrying it here.
+    """
+    return await _post("/api/internal/ocpp/authorize", {
+        "ocpp_identifier": ocpp_identifier,
+        "identifier": identifier,
+    })
+
 
 async def send_start_transaction(
     ocpp_identifier: str,
