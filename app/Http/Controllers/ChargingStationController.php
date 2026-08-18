@@ -16,7 +16,9 @@ use App\Http\Requests\DecommissionChargingStationRequest;
 use App\Http\Requests\UpdateChargingStationStateRequest;
 use App\Http\Requests\AssignChargingStationRequest;
 use App\Http\Resources\ChargingStationHistoryResource;
+use App\Services\OrganizationAccessService;
 use Illuminate\Support\Facades\DB;
+use Symfony\Component\HttpKernel\Exception\NotFoundHttpException;
 
 
 class ChargingStationController extends Controller
@@ -24,11 +26,15 @@ class ChargingStationController extends Controller
 public function __construct(
     protected ChargingStationService $chargingStationService,
     protected ChargingStationLifecycleService $lifecycleService,
+    protected OrganizationAccessService $organizationAccessService,
 ) {}
 
 public function index(Request $request)
 {
     $query = ChargingStation::query()->with('site.organization')->withCount('connectors');
+
+    $query = $this->organizationAccessService->scopeStations($query, auth()->user());
+
     if ($request->filled('administrative_status')) {
         $query->where('administrative_status', $request->input('administrative_status'));
     }
@@ -82,6 +88,10 @@ public function index(Request $request)
 
   public function show(ChargingStation $station)
 {
+    if (!$this->organizationAccessService->canAccessStation(auth()->user(), $station)) {
+        throw new NotFoundHttpException();
+    }
+
     $station->load('site.organization', 'connectors')->loadCount('connectors');
     return new ChargingStationResource($station);
 }

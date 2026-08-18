@@ -4,6 +4,8 @@ namespace Tests\Feature;
 
 use App\Models\ChargingStation;
 use App\Models\Connector;
+use App\Models\Organization;
+use App\Models\Site;
 use App\Models\User;
 use Database\Seeders\RolesAndPermissionsSeeder;
 use Illuminate\Foundation\Testing\RefreshDatabase;
@@ -55,14 +57,30 @@ class ConnectorAuthorizationTest extends TestCase
             ->assertStatus(401);
     }
 
-    public function test_client_role_is_forbidden_from_viewing_connectors(): void
+    public function test_client_role_without_matching_organization_gets_404_for_connectors(): void
     {
         $station = $this->createStationInCommissioning();
+        $this->createConnectorFor($station);
         $user = $this->userWithRole('Client');
 
         $this->actingAs($user, 'api')
             ->getJson("/api/charging-stations/{$station->id}/connectors")
-            ->assertStatus(403);
+            ->assertStatus(404);
+    }
+
+    public function test_client_role_can_view_connectors_for_own_organization_station(): void
+    {
+        $organization = Organization::factory()->create();
+        $site = Site::factory()->create(['organization_id' => $organization->id]);
+        $station = $this->createStationInCommissioning(['site_id' => $site->id]);
+        $this->createConnectorFor($station);
+
+        $user = $this->userWithRole('Client');
+        $user->organizations()->attach($organization->id);
+
+        $this->actingAs($user, 'api')
+            ->getJson("/api/charging-stations/{$station->id}/connectors")
+            ->assertStatus(200);
     }
 
     public function test_client_role_is_forbidden_from_creating_connector(): void

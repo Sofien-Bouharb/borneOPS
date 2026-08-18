@@ -21,8 +21,9 @@ import SiteEditPage from './pages/SiteEditPage';
 import ChargingSessionListPage from './pages/ChargingSessionListPage';
 import ChargingSessionCreatePage from './pages/ChargingSessionCreatePage';
 import ChargingSessionDetailPage from './pages/ChargingSessionDetailPage';
-
-
+import UserListPage from './pages/UserListPage';
+import UserCreatePage from './pages/UserCreatePage';
+import UserDetailPage from './pages/UserDetailPage';
 
 
 function ProtectedRoute({ children, permission }: { children: React.ReactNode; permission?: string }) {
@@ -81,6 +82,10 @@ function AppRoutes() {
         <Route path="/organizations/new" element={<ProtectedRoute permission="organizations.create"><OrganizationCreatePage /></ProtectedRoute>} />
         <Route path="/organizations/:id" element={<ProtectedRoute permission="organizations.view"><OrganizationDetailPage /></ProtectedRoute>} />
         <Route path="/organizations/:id/edit" element={<ProtectedRoute permission="organizations.update"><OrganizationEditPage /></ProtectedRoute>} />
+        <Route path="/users" element={<ProtectedRoute permission="users.view"><UserListPage /></ProtectedRoute>} />
+        <Route path="/users/new" element={<ProtectedRoute permission="users.create"><UserCreatePage /></ProtectedRoute>} />
+        <Route path="/users/:id" element={<ProtectedRoute permission="users.view"><UserDetailPage /></ProtectedRoute>} />
+
 
         {/* Module 2: Sites */}
         <Route path="/sites" element={<ProtectedRoute permission="sites.view"><SiteListPage /></ProtectedRoute>} />

@@ -26,14 +26,33 @@ class OrganizationTest extends TestCase
         $this->getJson('/api/organizations')->assertStatus(401);
     }
 
-    public function test_client_role_cannot_view_organizations(): void
+    public function test_client_role_with_no_organizations_sees_empty_list(): void
     {
+        Organization::factory()->create();
+
         $client = User::factory()->create();
         $client->assignRole('Client');
 
         $this->actingAs($client, 'api')
             ->getJson('/api/organizations')
-            ->assertStatus(403);
+            ->assertStatus(200)
+            ->assertJsonCount(0, 'data');
+    }
+
+    public function test_client_role_sees_only_own_organizations(): void
+    {
+        $organization = Organization::factory()->create();
+        Organization::factory()->create();
+
+        $client = User::factory()->create();
+        $client->assignRole('Client');
+        $client->organizations()->attach($organization->id);
+
+        $this->actingAs($client, 'api')
+            ->getJson('/api/organizations')
+            ->assertStatus(200)
+            ->assertJsonCount(1, 'data')
+            ->assertJsonPath('data.0.id', $organization->id);
     }
 
     public function test_admin_can_list_organizations(): void
