@@ -1,8 +1,7 @@
 <?php
-
 namespace App\Http\Controllers\Ocpp;
-
 use App\Http\Controllers\Controller;
+use App\Http\Requests\Ocpp\AuthorizeEventRequest;
 use App\Http\Requests\Ocpp\BootNotificationEventRequest;
 use App\Http\Requests\Ocpp\HeartbeatEventRequest;
 use App\Http\Requests\Ocpp\StartTransactionEventRequest;
@@ -10,23 +9,21 @@ use App\Http\Requests\Ocpp\StatusNotificationEventRequest;
 use App\Models\ChargingStation;
 use App\Models\Connector;
 use App\Services\ChargingSessionService;
+use App\Services\RfidAuthorizationService;
 use App\Services\StationMonitoringService;
 use Illuminate\Http\JsonResponse;
 use App\Http\Requests\Ocpp\MeterValuesEventRequest;
 use App\Http\Requests\Ocpp\StopTransactionEventRequest;
 use App\Http\Requests\Ocpp\StartTransactionExternalEventRequest;
 use App\Http\Requests\Ocpp\VerifyStationCredentialRequest;
-
-
 class OcppBridgeController extends Controller
 {
     public function __construct(
         protected StationMonitoringService $monitoringService,
         protected ChargingSessionService $sessionService,
+        protected RfidAuthorizationService $authorizationService,
     ) {
     }
-
-
 
 public function verifyStationCredential(VerifyStationCredentialRequest $request): JsonResponse
     {
@@ -55,6 +52,26 @@ public function verifyStationCredential(VerifyStationCredentialRequest $request)
         }
 
         return response()->json(['authorized' => true], 200);
+    }
+
+    public function authorize(AuthorizeEventRequest $request): JsonResponse
+    {
+        $validated = $request->validated();
+
+        $station = ChargingStation::where('ocpp_identifier', $validated['ocpp_identifier'])->first();
+
+        if ($station === null) {
+            return response()->json([
+                'message' => "No station found with ocpp_identifier '{$validated['ocpp_identifier']}'.",
+            ], 404);
+        }
+
+        $decision = $this->authorizationService->authorize($validated['identifier'], $station);
+
+        return response()->json([
+            'accepted' => $decision->accepted,
+            'reason' => $decision->reason->value,
+        ], 200);
     }
 
     public function heartbeat(HeartbeatEventRequest $request): JsonResponse
@@ -150,6 +167,7 @@ public function startTransaction(StartTransactionEventRequest $request): JsonRes
             $station,
             $connector,
             $validated['meter_start_wh'],
+            $validated['identifier'] ?? null,
         );
 
         return response()->json([
@@ -288,6 +306,7 @@ public function startTransactionExternal(StartTransactionExternalEventRequest $r
             $connector,
             $validated['external_transaction_id'],
             $validated['meter_start_wh'],
+            $validated['identifier'] ?? null,
         );
 
         return response()->json([

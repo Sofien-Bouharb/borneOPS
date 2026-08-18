@@ -54,17 +54,37 @@ async def verify_station_credential(ocpp_identifier: str, password: str, negotia
     return result.get("authorized", False)
 
 
+async def send_authorize(ocpp_identifier: str, identifier: str) -> dict:
+    """
+    Asks Laravel whether a presented RFID credential is currently allowed
+    to authorize at the given station. Uses the plain _post() (not
+    _post_with_retry()) deliberately: this is a real-time OCPP Authorize.req
+    that a driver is waiting on at the charger, so it must fail fast rather
+    than retry — RfidAuthorizationProvider (app/rfid_authorization.py) is
+    responsible for treating any BridgeClientError from this call as a
+    fail-closed rejection, not for retrying it here.
+    """
+    return await _post("/api/internal/ocpp/authorize", {
+        "ocpp_identifier": ocpp_identifier,
+        "identifier": identifier,
+    })
+
 
 async def send_start_transaction(
     ocpp_identifier: str,
     connector_number: int,
     meter_start_wh: int,
+    identifier: str | None = None,
 ) -> dict:
-    return await _post_with_retry("/api/internal/ocpp/transactions/start", {
+    payload = {
         "ocpp_identifier": ocpp_identifier,
         "connector_number": connector_number,
         "meter_start_wh": meter_start_wh,
-    })
+    }
+    if identifier is not None:
+        payload["identifier"] = identifier
+
+    return await _post_with_retry("/api/internal/ocpp/transactions/start", payload)
 
 
 async def send_start_transaction_external(
@@ -73,6 +93,7 @@ async def send_start_transaction_external(
     connector_id: int | None,
     external_transaction_id: str,
     meter_start_wh: int,
+    identifier: str | None = None,
 ) -> dict:
     payload = {
         "ocpp_identifier": ocpp_identifier,
@@ -82,6 +103,8 @@ async def send_start_transaction_external(
     }
     if connector_id is not None:
         payload["connector_id"] = connector_id
+    if identifier is not None:
+        payload["identifier"] = identifier
 
     return await _post_with_retry("/api/internal/ocpp/transactions/start-external", payload)
 

@@ -24,7 +24,8 @@ import ChargingSessionDetailPage from './pages/ChargingSessionDetailPage';
 import UserListPage from './pages/UserListPage';
 import UserCreatePage from './pages/UserCreatePage';
 import UserDetailPage from './pages/UserDetailPage';
-
+import RfidBadgeListPage from './pages/RfidBadgeListPage';
+import MyBadgesPage from './pages/MyBadgesPage';
 
 function ProtectedRoute({ children, permission }: { children: React.ReactNode; permission?: string }) {
   const { user, loading } = useAuth();
@@ -85,7 +86,8 @@ function AppRoutes() {
         <Route path="/users" element={<ProtectedRoute permission="users.view"><UserListPage /></ProtectedRoute>} />
         <Route path="/users/new" element={<ProtectedRoute permission="users.create"><UserCreatePage /></ProtectedRoute>} />
         <Route path="/users/:id" element={<ProtectedRoute permission="users.view"><UserDetailPage /></ProtectedRoute>} />
-
+        <Route path="/rfid-badges" element={<ProtectedRoute permission="rfid_badges.view"><RfidBadgeListPage /></ProtectedRoute>} />
+        <Route path="/my-badges" element={<ProtectedRoute><MyBadgesPage /></ProtectedRoute>} />
 
         {/* Module 2: Sites */}
         <Route path="/sites" element={<ProtectedRoute permission="sites.view"><SiteListPage /></ProtectedRoute>} />

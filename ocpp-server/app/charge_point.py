@@ -8,7 +8,7 @@ from ocpp.v16.datatypes import IdTagInfo
 from ocpp.v16.enums import AuthorizationStatus, RegistrationStatus
 
 from app import bridge_client
-from app.authorization import TestAuthorizationProvider
+from app.authorization import build_authorization_provider
 from app.bridge_client import BridgeClientError
 from app.meter_values import extract_energy_wh
 from app.stop_reason import map_stop_reason
@@ -27,7 +27,7 @@ def _now_iso() -> str:
 class BorneOpsChargePoint16(ChargePoint16):
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
-        self.authorization_provider = TestAuthorizationProvider()
+        self.authorization_provider = build_authorization_provider()
 
     @on("BootNotification")
     async def on_boot_notification(self, charge_point_vendor, charge_point_model, **kwargs):
@@ -69,7 +69,7 @@ class BorneOpsChargePoint16(ChargePoint16):
 
     @on("Authorize")
     async def on_authorize(self, id_tag, **kwargs):
-        if self.authorization_provider.is_authorized(id_tag):
+        if await self.authorization_provider.is_authorized(id_tag, self.id):
             status = AuthorizationStatus.accepted.value
         else:
             status = AuthorizationStatus.invalid.value
@@ -84,6 +84,7 @@ class BorneOpsChargePoint16(ChargePoint16):
                 self.id,
                 connector_id,
                 meter_start,
+                id_tag,
             )
         except BridgeClientError as e:
             logger.warning(f"StartTransaction bridge call failed for {self.id}: {e}")

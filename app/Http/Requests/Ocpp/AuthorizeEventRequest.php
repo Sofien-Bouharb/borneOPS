@@ -1,7 +1,7 @@
 <?php
 namespace App\Http\Requests\Ocpp;
 use Illuminate\Foundation\Http\FormRequest;
-class StartTransactionEventRequest extends FormRequest
+class AuthorizeEventRequest extends FormRequest
 {
     public function authorize(): bool
     {
@@ -11,9 +11,7 @@ class StartTransactionEventRequest extends FormRequest
     {
         return [
             'ocpp_identifier' => ['required', 'string'],
-            'connector_number' => ['required', 'integer', 'min:1'],
-            'meter_start_wh' => ['required', 'integer', 'min:0'],
-            'identifier' => ['nullable', 'string'],
+            'identifier' => ['required', 'string'],
         ];
     }
 }
