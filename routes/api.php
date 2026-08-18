@@ -14,6 +14,10 @@ use App\Http\Controllers\ChargingSessionController;
 use App\Http\Controllers\Ocpp\OcppBridgeController;
 use App\Http\Controllers\ChargingStationRemoteControlController;
 use App\Http\Controllers\UserController;
+use App\Http\Controllers\RfidBadgeController;
+
+
+
 
 Route::post('/login', [AuthController::class, 'login'])
     ->middleware('throttle:login');
@@ -153,10 +157,26 @@ Route::middleware(['auth:api', 'account.active'])->group(function () {
         ->middleware('permission:charging_stations.remote_control');
     Route::post('/charging-stations/{station}/connectors/{connector}/unlock', [ChargingStationRemoteControlController::class, 'unlockConnector'])
         ->middleware('permission:charging_stations.remote_control');
-
-
+    // --- Module 7: RFID Badge Management ---
+    Route::get('/rfid-badges', [RfidBadgeController::class, 'index'])
+        ->middleware('permission:rfid_badges.view');
+    Route::post('/rfid-badges', [RfidBadgeController::class, 'store'])
+        ->middleware('permission:rfid_badges.create');
+    Route::get('/rfid-badges/{badge}', [RfidBadgeController::class, 'show'])
+        ->middleware('permission:rfid_badges.view');
+    Route::patch('/rfid-badges/{badge}', [RfidBadgeController::class, 'update'])
+        ->middleware('permission:rfid_badges.update');
+    Route::patch('/rfid-badges/{badge}/reassign', [RfidBadgeController::class, 'reassign'])
+        ->middleware('permission:rfid_badges.reassign');
+    Route::patch('/rfid-badges/{badge}/activate', [RfidBadgeController::class, 'activate'])
+        ->middleware('permission:rfid_badges.activate');
+    Route::patch('/rfid-badges/{badge}/block', [RfidBadgeController::class, 'block'])
+        ->middleware('permission:rfid_badges.block');
+    Route::patch('/rfid-badges/{badge}/expiration', [RfidBadgeController::class, 'updateExpiration'])
+        ->middleware('permission:rfid_badges.expiration.update');
+    Route::get('/rfid-badges/{badge}/history', [RfidBadgeController::class, 'history'])
+        ->middleware('permission:rfid_badges.history.view');
 });
-
 // --- OCPP Server Integration: internal bridge ---
 // Authenticated by a shared service secret (OCPP_BRIDGE_TOKEN via the
 // ocpp_bridge middleware), never a human JWT, never Spatie permissions.
