@@ -1,7 +1,5 @@
 <?php
-
 namespace App\Models;
-
 // use Illuminate\Contracts\Auth\MustVerifyEmail;
 use Database\Factories\UserFactory;
 use Illuminate\Database\Eloquent\Attributes\Fillable;
@@ -13,14 +11,12 @@ use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Notifications\Notifiable;
 use Tymon\JWTAuth\Contracts\JWTSubject;
 use Spatie\Permission\Traits\HasRoles;
-
 #[Fillable(['name', 'email', 'password'])]
 #[Hidden(['password', 'remember_token', 'two_factor_secret'])]
 class User extends Authenticatable implements JWTSubject
 {
     /** @use HasFactory<UserFactory> */
     use HasFactory, Notifiable, HasRoles;
-
     /**
      * Get the attributes that should be cast.
      *
@@ -38,7 +34,6 @@ class User extends Authenticatable implements JWTSubject
             'two_factor_secret' => 'encrypted',
         ];
     }
-
     /**
      * Get the identifier that will be stored in the subject claim of the JWT.
      *
@@ -48,7 +43,6 @@ class User extends Authenticatable implements JWTSubject
     {
         return $this->getKey();
     }
-
     /**
      * Return a key value array, containing any custom claims to be added to the JWT.
      *
@@ -58,23 +52,23 @@ class User extends Authenticatable implements JWTSubject
     {
         return [];
     }
-
     public function sendPasswordResetNotification($token)
     {
         $url = config('app.frontend_url')
             . '/reset-password?token=' . $token
             . '&email=' . urlencode($this->email);
-
         $this->notify(new \App\Notifications\ResetPasswordNotification($url));
     }
-
     public function organizations(): BelongsToMany
     {
         return $this->belongsToMany(Organization::class);
     }
-
     public function histories(): HasMany
     {
         return $this->hasMany(UserHistory::class);
+    }
+    public function rfidBadges(): HasMany
+    {
+        return $this->hasMany(RfidBadge::class);
     }
 }
