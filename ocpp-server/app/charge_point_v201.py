@@ -106,6 +106,7 @@ class BorneOpsChargePoint201(ChargePoint201):
         energy_wh = extract_energy_wh_v201(meter_value) if meter_value else None
 
         if event_type == "Started":
+            id_tag_value = id_token.get("id_token") if isinstance(id_token, dict) else id_token
             try:
                 await bridge_client.send_start_transaction_external(
                     self.id,
@@ -113,6 +114,7 @@ class BorneOpsChargePoint201(ChargePoint201):
                     connector_id,
                     transaction_id,
                     energy_wh if energy_wh is not None else 0,
+                    id_tag_value,
                 )
             except BridgeClientError as e:
                 logger.warning(f"TransactionEvent(Started) bridge call failed for {self.id}: {e}")

@@ -74,12 +74,17 @@ async def send_start_transaction(
     ocpp_identifier: str,
     connector_number: int,
     meter_start_wh: int,
+    identifier: str | None = None,
 ) -> dict:
-    return await _post_with_retry("/api/internal/ocpp/transactions/start", {
+    payload = {
         "ocpp_identifier": ocpp_identifier,
         "connector_number": connector_number,
         "meter_start_wh": meter_start_wh,
-    })
+    }
+    if identifier is not None:
+        payload["identifier"] = identifier
+
+    return await _post_with_retry("/api/internal/ocpp/transactions/start", payload)
 
 
 async def send_start_transaction_external(
@@ -88,6 +93,7 @@ async def send_start_transaction_external(
     connector_id: int | None,
     external_transaction_id: str,
     meter_start_wh: int,
+    identifier: str | None = None,
 ) -> dict:
     payload = {
         "ocpp_identifier": ocpp_identifier,
@@ -97,6 +103,8 @@ async def send_start_transaction_external(
     }
     if connector_id is not None:
         payload["connector_id"] = connector_id
+    if identifier is not None:
+        payload["identifier"] = identifier
 
     return await _post_with_retry("/api/internal/ocpp/transactions/start-external", payload)
 

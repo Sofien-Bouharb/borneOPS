@@ -84,7 +84,27 @@ async def test_transaction_event_started_calls_bridge_with_evse_and_connector_id
             }],
         )
 
-    mock_call.assert_awaited_once_with("TEST-CP-201", 1, 1, "CP201-TXN-001", 1000)
+    mock_call.assert_awaited_once_with("TEST-CP-201", 1, 1, "CP201-TXN-001", 1000, None)
+
+
+@pytest.mark.asyncio
+async def test_transaction_event_started_forwards_id_token_to_bridge(charge_point):
+    with patch("app.charge_point_v201.bridge_client.send_start_transaction_external", new=AsyncMock()) as mock_call:
+        await charge_point.on_transaction_event(
+            event_type="Started",
+            timestamp="2026-08-11T16:41:10Z",
+            trigger_reason="Authorized",
+            seq_no=0,
+            transaction_info={"transaction_id": "CP201-TXN-006"},
+            evse={"id": 1, "connector_id": 1},
+            id_token={"id_token": "BADGE-RAW-TOKEN", "type": "ISO14443"},
+            meter_value=[{
+                "timestamp": "2026-08-11T16:41:10Z",
+                "sampled_value": [{"value": 1000.0, "measurand": "Energy.Active.Import.Register"}],
+            }],
+        )
+    mock_call.assert_awaited_once_with("TEST-CP-201", 1, 1, "CP201-TXN-006", 1000, "BADGE-RAW-TOKEN")
+
 
 
 @pytest.mark.asyncio
@@ -106,7 +126,7 @@ async def test_transaction_event_started_passes_none_connector_id_when_omitted(c
     # This handler must not invent a connector_id when the charger omits
     # one — that resolution belongs to Laravel (ocpp_evse_id/ocpp_connector_id
     # lookup), not the gateway, which has no database access.
-    mock_call.assert_awaited_once_with("TEST-CP-201", 1, None, "CP201-TXN-004", 500)
+    mock_call.assert_awaited_once_with("TEST-CP-201", 1, None, "CP201-TXN-004", 500, None)
 
 
 @pytest.mark.asyncio
@@ -125,7 +145,7 @@ async def test_transaction_event_started_passes_none_evse_id_when_evse_missing_e
             }],
         )
 
-    mock_call.assert_awaited_once_with("TEST-CP-201", None, None, "CP201-TXN-005", 100)
+    mock_call.assert_awaited_once_with("TEST-CP-201", None, None, "CP201-TXN-005", 100, None)
 
 
 @pytest.mark.asyncio
@@ -140,7 +160,7 @@ async def test_transaction_event_started_defaults_to_zero_when_no_meter_value(ch
             evse={"id": 1, "connector_id": 1},
         )
 
-    mock_call.assert_awaited_once_with("TEST-CP-201", 1, 1, "CP201-TXN-002", 0)
+    mock_call.assert_awaited_once_with("TEST-CP-201", 1, 1, "CP201-TXN-002", 0, None)
 
 
 @pytest.mark.asyncio

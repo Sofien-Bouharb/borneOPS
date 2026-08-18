@@ -31,7 +31,7 @@ async def test_start_transaction_calls_bridge_and_returns_assigned_transaction_i
             timestamp="2026-08-11T15:00:00Z",
         )
 
-    mock_call.assert_awaited_once_with("TEST-CP-001", 1, 4000)
+    mock_call.assert_awaited_once_with("TEST-CP-001", 1, 4000, "TAG-DRIVER-001")
     assert result.transaction_id == 42
     assert result.id_tag_info.status == "Accepted"
 

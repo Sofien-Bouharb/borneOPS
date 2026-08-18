@@ -84,6 +84,7 @@ class BorneOpsChargePoint16(ChargePoint16):
                 self.id,
                 connector_id,
                 meter_start,
+                id_tag,
             )
         except BridgeClientError as e:
             logger.warning(f"StartTransaction bridge call failed for {self.id}: {e}")
