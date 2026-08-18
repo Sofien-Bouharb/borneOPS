@@ -10,6 +10,8 @@ use App\Models\ChargingStation;
 use App\Models\Connector;
 use App\Models\User;
 use Illuminate\Support\Facades\DB;
+use App\Services\RfidAuthorizationService;
+
 
 class ChargingSessionService
 {
@@ -46,9 +48,9 @@ class ChargingSessionService
         protected StationMonitoringService $stationMonitoringService,
         protected ChargingStationService $chargingStationService,
         protected ConnectorService $connectorService,
+        protected RfidAuthorizationService $rfidAuthorizationService,
     ) {
     }
-
     /**
      * Create a new session in 'pending' status.
      *
@@ -192,18 +194,26 @@ public function start(
      *
      * @throws InvalidStateTransitionException
      */
-    public function bindOcppTransactionId(
+        public function bindOcppTransactionId(
         ChargingStation $station,
         Connector $connector,
         int $meterStartWh,
+        ?string $rawIdentifier = null,
         ?\Carbon\CarbonInterface $occurredAt = null
     ): ChargingSession {
         $activeExisting = ChargingSession::where('connector_id', $connector->id)
             ->where('status', 'active')
             ->first();
-
         if ($activeExisting !== null) {
             return $activeExisting;
+        }
+
+        $resolvedUserId = null;
+        if ($rawIdentifier !== null) {
+            $decision = $this->rfidAuthorizationService->authorize($rawIdentifier, $station);
+            if ($decision->accepted) {
+                $resolvedUserId = $decision->user->id;
+            }
         }
 
         $pending = ChargingSession::where('connector_id', $connector->id)
@@ -214,8 +224,19 @@ public function start(
             $pending = $this->create([
                 'charging_station_id' => $station->id,
                 'connector_id' => $connector->id,
-                'customer_user_id' => null,
+                'customer_user_id' => $resolvedUserId,
             ], null, 'ocpp');
+        } elseif ($resolvedUserId !== null) {
+            if ($pending->customer_user_id !== null && $pending->customer_user_id !== $resolvedUserId) {
+                throw new InvalidStateTransitionException(
+                    "La session en attente sur ce connecteur est déjà associée à un autre client. Le badge présenté correspond à un client différent."
+                );
+            }
+
+            if ($pending->customer_user_id === null) {
+                $pending->customer_user_id = $resolvedUserId;
+                $pending->save();
+            }
         }
 
         $session = $this->start($pending, $meterStartWh, null, 'ocpp', null, $occurredAt);
@@ -245,19 +266,27 @@ public function start(
      *
      * @throws InvalidStateTransitionException
      */
-    public function bindExternalTransactionId(
+       public function bindExternalTransactionId(
         ChargingStation $station,
         Connector $connector,
         string $externalTransactionId,
         int $meterStartWh,
+        ?string $rawIdentifier = null,
         ?\Carbon\CarbonInterface $occurredAt = null
     ): ChargingSession {
         $existing = ChargingSession::where('charging_station_id', $station->id)
             ->where('ocpp_transaction_id', $externalTransactionId)
             ->first();
-
         if ($existing !== null) {
             return $existing;
+        }
+
+        $resolvedUserId = null;
+        if ($rawIdentifier !== null) {
+            $decision = $this->rfidAuthorizationService->authorize($rawIdentifier, $station);
+            if ($decision->accepted) {
+                $resolvedUserId = $decision->user->id;
+            }
         }
 
         $pending = ChargingSession::where('connector_id', $connector->id)
@@ -268,8 +297,19 @@ public function start(
             $pending = $this->create([
                 'charging_station_id' => $station->id,
                 'connector_id' => $connector->id,
-                'customer_user_id' => null,
+                'customer_user_id' => $resolvedUserId,
             ], null, 'ocpp');
+        } elseif ($resolvedUserId !== null) {
+            if ($pending->customer_user_id !== null && $pending->customer_user_id !== $resolvedUserId) {
+                throw new InvalidStateTransitionException(
+                    "La session en attente sur ce connecteur est déjà associée à un autre client. Le badge présenté correspond à un client différent."
+                );
+            }
+
+            if ($pending->customer_user_id === null) {
+                $pending->customer_user_id = $resolvedUserId;
+                $pending->save();
+            }
         }
 
         return $this->start($pending, $meterStartWh, null, 'ocpp', $externalTransactionId, $occurredAt);

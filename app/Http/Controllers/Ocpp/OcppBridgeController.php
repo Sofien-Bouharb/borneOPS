@@ -167,6 +167,7 @@ public function startTransaction(StartTransactionEventRequest $request): JsonRes
             $station,
             $connector,
             $validated['meter_start_wh'],
+            $validated['identifier'] ?? null,
         );
 
         return response()->json([
@@ -305,6 +306,7 @@ public function startTransactionExternal(StartTransactionExternalEventRequest $r
             $connector,
             $validated['external_transaction_id'],
             $validated['meter_start_wh'],
+            $validated['identifier'] ?? null,
         );
 
         return response()->json([
