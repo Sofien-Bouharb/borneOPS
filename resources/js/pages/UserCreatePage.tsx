@@ -19,9 +19,9 @@ export default function UserCreatePage() {
 
   const onFinish = async (values: Record<string, unknown>) => {
     try {
-      await createMutation.mutateAsync(values);
+      const user = await createMutation.mutateAsync(values);
       message.success('Utilisateur créé avec succès. Un lien de configuration du mot de passe lui a été envoyé.');
-      navigate('/users');
+      navigate(`/users/${user.id}`);
     } catch (err: unknown) {
       const error = err as { response?: { data?: { errors?: Record<string, string[]> } } };
       if (error.response?.data?.errors) {

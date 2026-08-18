@@ -23,7 +23,7 @@ import ChargingSessionCreatePage from './pages/ChargingSessionCreatePage';
 import ChargingSessionDetailPage from './pages/ChargingSessionDetailPage';
 import UserListPage from './pages/UserListPage';
 import UserCreatePage from './pages/UserCreatePage';
-
+import UserDetailPage from './pages/UserDetailPage';
 
 
 function ProtectedRoute({ children, permission }: { children: React.ReactNode; permission?: string }) {
@@ -84,6 +84,9 @@ function AppRoutes() {
         <Route path="/organizations/:id/edit" element={<ProtectedRoute permission="organizations.update"><OrganizationEditPage /></ProtectedRoute>} />
         <Route path="/users" element={<ProtectedRoute permission="users.view"><UserListPage /></ProtectedRoute>} />
         <Route path="/users/new" element={<ProtectedRoute permission="users.create"><UserCreatePage /></ProtectedRoute>} />
+        <Route path="/users/:id" element={<ProtectedRoute permission="users.view"><UserDetailPage /></ProtectedRoute>} />
+
+
         {/* Module 2: Sites */}
         <Route path="/sites" element={<ProtectedRoute permission="sites.view"><SiteListPage /></ProtectedRoute>} />
         <Route path="/sites/new" element={<ProtectedRoute permission="sites.create"><SiteCreatePage /></ProtectedRoute>} />

@@ -2,7 +2,7 @@ import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Table, Button, Space, Card, Row, Col, Typography, Input, Tag, Select, Popconfirm, message } from 'antd';
 import { PlusOutlined, ReloadOutlined, SearchOutlined } from '@ant-design/icons';
-import { useUsers, useUpdateAccountStatus, useResendPasswordSetupLink, ASSIGNABLE_ROLES, type AppUser } from '../api/users';
+import { useUsers, useUpdateAccountStatus, useResendPasswordSetupLink, ALL_ROLES, type AppUser } from '../api/users';
 import { usePermission } from '../auth/AuthContext';
 import { useDebouncedValue } from '../utils/useDebouncedValue';
 import { extractErrorMessage } from '../utils/apiErrors';
@@ -37,6 +37,7 @@ export default function UserListPage() {
 
   const canCreate = usePermission('users.create');
   const canDisable = usePermission('users.disable');
+  const canView = usePermission('users.view');
 
   const statusMutation = useUpdateAccountStatus();
   const resendMutation = useResendPasswordSetupLink();
@@ -66,7 +67,7 @@ export default function UserListPage() {
       dataIndex: 'name',
       key: 'name',
       render: (name: string, record: AppUser) =>
-        canDisable ? <a onClick={() => navigate(`/users/${record.id}`)}>{name}</a> : name,
+        canView ? <a onClick={() => navigate(`/users/${record.id}`)}>{name}</a> : name,
     },
     { title: 'Email', dataIndex: 'email', key: 'email' },
     {
@@ -104,8 +105,9 @@ export default function UserListPage() {
     {
       title: 'Actions',
       key: 'actions',
+      width: 260,
       render: (_: unknown, record: AppUser) => (
-        <Space>
+        <Space size="small" wrap={false} onClick={(e) => e.stopPropagation()}>
           {canDisable && (
             <Popconfirm
               title={record.account_status === 'active' ? 'Désactiver ce compte ?' : 'Activer ce compte ?'}
@@ -113,13 +115,13 @@ export default function UserListPage() {
               okText="Confirmer"
               cancelText="Annuler"
             >
-              <Button size="small" danger={record.account_status === 'active'}>
+              <Button size="small" danger={record.account_status === 'active'} style={{ minWidth: 90 }}>
                 {record.account_status === 'active' ? 'Désactiver' : 'Activer'}
               </Button>
             </Popconfirm>
           )}
           {canDisable && (
-            <Button size="small" onClick={() => handleResend(record)} loading={resendMutation.isPending}>
+            <Button size="small" onClick={() => handleResend(record)} loading={resendMutation.isPending} style={{ minWidth: 130 }}>
               Renvoyer le lien
             </Button>
           )}
@@ -174,8 +176,8 @@ export default function UserListPage() {
               allowClear
               value={role}
               onChange={setRole}
-              style={{ width: 180 }}
-              options={ASSIGNABLE_ROLES.map((r) => ({ value: r, label: r }))}
+              style={{ width: 200 }}
+              options={ALL_ROLES.map((r) => ({ value: r, label: r }))}
             />
           </Space>
         </Card>
@@ -183,10 +185,17 @@ export default function UserListPage() {
         <Card className="station-table-card">
           <Table
             className="station-table"
+            size="middle"
             rowKey="id"
             columns={columns}
             dataSource={data?.data ?? []}
             loading={isLoading}
+            onRow={(record) => ({
+              onClick: () => {
+                if (canView) navigate(`/users/${record.id}`);
+              },
+              style: canView ? { cursor: 'pointer' } : undefined,
+            })}
             pagination={{
               current: page,
               pageSize: data?.meta.per_page ?? 15,

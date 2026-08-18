@@ -36,6 +36,7 @@ export interface UserFilters {
 }
 
 export const ASSIGNABLE_ROLES = ['Opérateur', 'Technicien', 'Service Client', 'Client'];
+export const ALL_ROLES = ['Super Administrator', 'Exploitant', 'Opérateur', 'Technicien', 'Service Client', 'Finance', 'Client'];
 
 // --- API functions ---
 
