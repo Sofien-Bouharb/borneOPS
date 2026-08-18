@@ -37,6 +37,9 @@ const NAV_ITEMS: NavItem[] = [
     { key: '/organizations', label: 'Organisations', icon: <ApartmentOutlined />, permission: 'organizations.view' },
     { key: '/sites', label: 'Sites', icon: <EnvironmentOutlined />, permission: 'sites.view' },
     { key: '/users', label: 'Utilisateurs', icon: <TeamOutlined />, permission: 'users.view' },
+    { key: '/rfid-badges', label: 'Badges RFID', icon: <SafetyCertificateOutlined />, permission: 'rfid_badges.view' },
+    { key: '/my-badges', label: 'Mes badges', icon: <SafetyCertificateOutlined />, permission: 'my_badges_only' },
+    { key: '/rfid-badges', label: 'Badges RFID', icon: <SafetyCertificateOutlined />, permission: 'rfid_badges.view' },
 ];
 
 export default function AppShell({ children }: { children: ReactNode }) {
@@ -47,9 +50,12 @@ export default function AppShell({ children }: { children: ReactNode }) {
     const isMobile = !screens.lg;
     const [drawerOpen, setDrawerOpen] = useState(false);
 
-    const visibleNavItems = NAV_ITEMS.filter(
-        (item) => item.permission === null || user?.permissions?.includes(item.permission)
-    );
+    const isClient = user?.roles?.includes('Client') ?? false;
+    const visibleNavItems = NAV_ITEMS.filter((item) => {
+        if (item.permission === 'my_badges_only') return isClient;
+        if (item.key === '/rfid-badges' && isClient) return false;
+        return item.permission === null || user?.permissions?.includes(item.permission);
+    });
 
     const selectedKey =
         visibleNavItems.find((item) => location.pathname.startsWith(item.key))?.key ?? '/dashboard';
