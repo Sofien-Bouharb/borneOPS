@@ -39,7 +39,7 @@ const NAV_ITEMS: NavItem[] = [
     { key: '/users', label: 'Utilisateurs', icon: <TeamOutlined />, permission: 'users.view' },
     { key: '/rfid-badges', label: 'Badges RFID', icon: <SafetyCertificateOutlined />, permission: 'rfid_badges.view' },
     { key: '/my-badges', label: 'Mes badges', icon: <SafetyCertificateOutlined />, permission: 'my_badges_only' },
-    { key: '/rfid-badges', label: 'Badges RFID', icon: <SafetyCertificateOutlined />, permission: 'rfid_badges.view' },
+
 ];
 
 export default function AppShell({ children }: { children: ReactNode }) {
