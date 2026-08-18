@@ -32,6 +32,10 @@ class AuthenticationService
             return ['status' => 'failed'];
         }
 
+        if ($user->account_status === 'disabled') {
+            return ['status' => 'failed'];
+        }
+
         $user->failed_login_attempts = 0;
         $user->locked_until = null;
         $user->last_login_at = now();
