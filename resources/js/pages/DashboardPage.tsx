@@ -188,9 +188,9 @@ export default function DashboardPage() {
             <div style={{ padding: 24 }}>
                 <div className="dashboard-heading">
                     <div>
-                        <p className="section-eyebrow">Real-time supervision</p>
-                        <h1>Supervision dashboard</h1>
-                        <p>Live overview of every charging station across the network.</p>
+                        <p className="section-eyebrow">Supervision en temps réel</p>
+                        <h1>Tableau de bord de supervision</h1>
+                        <p>Vue d’ensemble en temps réel de toutes les bornes du réseau.</p>
                     </div>
                 </div>
 

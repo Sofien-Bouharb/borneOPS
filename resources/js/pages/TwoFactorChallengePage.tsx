@@ -35,7 +35,7 @@ export default function TwoFactorChallengePage({
             onVerified(response.data.access_token, response.data.user);
         } catch (err: any) {
             setError(
-                err.response?.data?.message ?? 'Invalid or expired code.',
+                err.response?.data?.message ?? 'Code invalide ou expiré.',
             );
         } finally {
             setSubmitting(false);
@@ -51,34 +51,34 @@ export default function TwoFactorChallengePage({
                     </span>
                     <span>
                         <span className="brand__name">BorneOPS</span>
-                        <span className="brand__descriptor">Charge network control</span>
+                        <span className="brand__descriptor">Pilotage du réseau de recharge</span>
                     </span>
                 </div>
 
                 <div className="auth-context__content">
-                    <p className="auth-context__eyebrow">Identity verification</p>
+                    <p className="auth-context__eyebrow">Vérification d’identité</p>
                     <h1 className="auth-context__title">
-                        A second check protects critical operations.
+                        Une seconde vérification protège les opérations critiques.
                     </h1>
                     <p className="auth-context__copy">
-                        Multi-factor authentication helps ensure that station controls and
-                        network data remain available only to verified operators.
+                        L’authentification multifacteur garantit que les commandes des bornes et
+                        les données du réseau restent accessibles uniquement aux opérateurs vérifiés.
                     </p>
                 </div>
 
                 <div className="auth-context__footer">
                     <span className="auth-context__status" aria-hidden="true" />
-                    Verification step 2 of 2
+                    Étape de vérification 2 sur 2
                 </div>
             </aside>
 
             <main className="auth-main">
                 <div className="auth-panel">
                     <div className="auth-heading">
-                        <p className="section-eyebrow">Two-factor authentication</p>
-                        <Title level={2}>Verify your identity</Title>
+                        <p className="section-eyebrow">Authentification à deux facteurs</p>
+                        <Title level={2}>Vérifiez votre identité</Title>
                         <Text className="auth-heading__copy">
-                            Enter the 6-digit code from your authenticator app to continue.
+                            Saisissez le code à 6 chiffres de votre application d’authentification pour continuer.
                         </Text>
                     </div>
 
@@ -92,7 +92,7 @@ export default function TwoFactorChallengePage({
                     )}
 
                     <label className="setup-step__title" htmlFor="authentication-code">
-                        Authentication code
+                        Code d’authentification
                     </label>
                     <Input
                         id="authentication-code"
@@ -114,12 +114,12 @@ export default function TwoFactorChallengePage({
                         loading={submitting}
                         onClick={handleVerify}
                     >
-                        Verify and continue
+                        Vérifier et continuer
                     </Button>
 
                     <div className="security-note">
                         <SafetyCertificateOutlined aria-hidden="true" />
-                        <span>Codes are time-limited and can only be used once.</span>
+                        <span>Les codes ont une durée de validité limitée et ne peuvent être utilisés qu’une seule fois.</span>
                     </div>
                 </div>
             </main>

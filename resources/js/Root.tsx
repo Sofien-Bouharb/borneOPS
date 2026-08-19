@@ -36,7 +36,7 @@ function ProtectedRoute({ children, permission }: { children: React.ReactNode; p
       <div className="loading-screen" role="status" aria-live="polite">
         <div className="loading-screen__content">
           <LoadingOutlined spin />
-          <span>Restoring secure session…</span>
+          <span>Restauration de la session sécurisée…</span>
         </div>
       </div>
     );

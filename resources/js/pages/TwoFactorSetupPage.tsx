@@ -40,7 +40,7 @@ export default function TwoFactorSetupPage({
             onEnrolled(response.data.access_token, response.data.user);
         } catch (err: any) {
             setError(
-                err.response?.data?.message ?? 'Invalid or expired code.',
+                err.response?.data?.message ?? 'Code invalide ou expiré.',
             );
         } finally {
             setSubmitting(false);
@@ -56,35 +56,35 @@ export default function TwoFactorSetupPage({
                     </span>
                     <span>
                         <span className="brand__name">BorneOPS</span>
-                        <span className="brand__descriptor">Charge network control</span>
+                        <span className="brand__descriptor">Pilotage du réseau de recharge</span>
                     </span>
                 </div>
 
                 <div className="auth-context__content">
-                    <p className="auth-context__eyebrow">Account protection</p>
+                    <p className="auth-context__eyebrow">Protection du compte</p>
                     <h1 className="auth-context__title">
-                        Secure access for infrastructure teams.
+                        Sécurisez les accès des équipes chargées de l’infrastructure.
                     </h1>
                     <p className="auth-context__copy">
-                        Your role can affect live charging infrastructure. Two-factor
-                        authentication adds an essential control to every sign-in.
+                        Votre rôle peut avoir un impact sur l’infrastructure de recharge en service. L’authentification à deux facteurs
+                        ajoute un contrôle essentiel à chaque connexion.
                     </p>
                 </div>
 
                 <div className="auth-context__footer">
                     <span className="auth-context__status" aria-hidden="true" />
-                    Required security setup
+                    Configuration de sécurité requise
                 </div>
             </aside>
 
             <main className="auth-main">
                 <div className="auth-panel auth-panel--wide">
                     <div className="auth-heading">
-                        <p className="section-eyebrow">Two-factor authentication</p>
-                        <Title level={2}>Connect your authenticator</Title>
+                        <p className="section-eyebrow">Authentification à deux facteurs</p>
+                        <Title level={2}>Connectez votre application d’authentification</Title>
                         <Text className="auth-heading__copy">
-                            Scan the code, then confirm setup with the 6-digit code shown
-                            by your authenticator app.
+                            Scannez le code, puis confirmez la configuration avec le code à 6 chiffres affiché
+                            par votre application d’authentification.
                         </Text>
                     </div>
 
@@ -93,7 +93,7 @@ export default function TwoFactorSetupPage({
                             <QRCodeSVG
                                 value={otpauthUrl}
                                 size={188}
-                                title="BorneOPS authenticator enrollment QR code"
+                                title="Code QR d’inscription à l’application d’authentification BorneOPS"
                             />
                         </div>
 
@@ -101,10 +101,10 @@ export default function TwoFactorSetupPage({
                             <div className="setup-step">
                                 <span className="setup-step__number">1</span>
                                 <div>
-                                    <span className="setup-step__title">Scan the QR code</span>
+                                    <span className="setup-step__title">Scannez le code QR</span>
                                     <p className="setup-step__copy">
-                                        Use your approved authenticator application to add
-                                        this account.
+                                        Utilisez votre application d’authentification approuvée pour ajouter
+                                        ce compte.
                                     </p>
                                 </div>
                             </div>
@@ -113,10 +113,10 @@ export default function TwoFactorSetupPage({
                                 <span className="setup-step__number">2</span>
                                 <div>
                                     <span className="setup-step__title">
-                                        Or enter the setup key
+                                        Ou saisissez la clé de configuration
                                     </span>
                                     <p className="setup-step__copy">
-                                        Use this key if your device cannot scan the code.
+                                        Utilisez cette clé si votre appareil ne peut pas scanner le code.
                                     </p>
                                     <Text className="setup-secret" code copyable>
                                         {secret}
@@ -137,7 +137,7 @@ export default function TwoFactorSetupPage({
                         )}
 
                         <label className="setup-step__title" htmlFor="setup-code">
-                            Confirmation code
+                            Code de confirmation
                         </label>
                         <Input
                             id="setup-code"
@@ -159,14 +159,14 @@ export default function TwoFactorSetupPage({
                             loading={submitting}
                             onClick={handleConfirm}
                         >
-                            Confirm and enable 2FA
+                            Confirmer et activer l’A2F
                         </Button>
 
                         <div className="security-note">
                             <SafetyCertificateOutlined aria-hidden="true" />
                             <span>
-                                Keep the setup key private. It grants access to your
-                                authentication codes.
+                                Gardez la clé de configuration privée. Elle donne accès à vos
+                                codes d’authentification.
                             </span>
                         </div>
                     </div>
