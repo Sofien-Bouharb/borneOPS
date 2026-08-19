@@ -112,7 +112,7 @@ export default function StationMap({ stations, height = 480 }: StationMapProps) 
             ref={mapRef}
         >
             <TileLayer
-                attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
+                attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributeurs'
                 url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
             />
             {plottableStations.map((station) => {

@@ -99,7 +99,7 @@ export default function AppShell({ children }: { children: ReactNode }) {
             </span>
             <span>
                 <span className="brand__name">BorneOPS</span>
-                <span className="brand__descriptor">Charge network control</span>
+                <span className="brand__descriptor">Pilotage du réseau de recharge</span>
             </span>
         </div>
     );
@@ -149,14 +149,14 @@ export default function AppShell({ children }: { children: ReactNode }) {
                                 type="text"
                                 icon={<MenuOutlined />}
                                 onClick={() => setDrawerOpen(true)}
-                                aria-label="Open navigation menu"
+                                aria-label="Ouvrir le menu de navigation"
                             />
                         )}
                         {isMobile && brand}
                         {!isMobile && (
                             <div className="ops-header__trust">
                                 <SafetyCertificateOutlined aria-hidden="true" />
-                                <Text type="secondary">Authorized operator workspace</Text>
+                                <Text type="secondary">Espace de travail réservé aux opérateurs autorisés</Text>
                             </div>
                         )}
                     </div>

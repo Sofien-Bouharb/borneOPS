@@ -51,20 +51,20 @@ export default function ResetPasswordPage() {
       navigate('/login', {
         replace: true,
         state: {
-          notice: 'Your password has been reset. Please sign in with your new password.',
+          notice: 'Votre mot de passe a été réinitialisé. Veuillez vous connecter avec votre nouveau mot de passe.',
         },
       });
     } catch (err: any) {
       const status = err?.response?.status;
       if (status === 429) {
-        setError('Too many attempts. Please wait a few minutes and try again.');
+        setError('Trop de tentatives. Veuillez patienter quelques minutes avant de réessayer.');
       } else if (status === 422) {
         const message =
           err?.response?.data?.message ??
-          'This reset link is invalid or has expired. Please request a new one.';
+          'Ce lien de réinitialisation est invalide ou a expiré. Veuillez en demander un nouveau.';
         setError(message);
       } else {
-        setError('Something went wrong. Please try again.');
+        setError('Une erreur est survenue. Veuillez réessayer.');
       }
     } finally {
       setLoading(false);
@@ -80,34 +80,34 @@ export default function ResetPasswordPage() {
           </span>
           <span>
             <span className="brand__name">BorneOPS</span>
-            <span className="brand__descriptor">Charge network control</span>
+            <span className="brand__descriptor">Pilotage du réseau de recharge</span>
           </span>
         </div>
 
         <div className="auth-context__content">
-          <p className="auth-context__eyebrow">Credential security</p>
+          <p className="auth-context__eyebrow">Sécurité des identifiants</p>
           <h1 className="auth-context__title">
-            Keep operational access controlled.
+            Gardez le contrôle des accès opérationnels.
           </h1>
           <p className="auth-context__copy">
-            Set a strong, unique password for your operator identity. Existing
-            sessions will be invalidated after the reset.
+            Définissez un mot de passe robuste et unique pour votre identité opérateur. Les
+            sessions existantes seront invalidées après la réinitialisation.
           </p>
         </div>
 
         <div className="auth-context__footer">
           <span className="auth-context__status" aria-hidden="true" />
-          Secure password update
+          Mise à jour sécurisée du mot de passe
         </div>
       </aside>
 
       <main className="auth-main">
         <div className="auth-panel">
           <div className="auth-heading">
-            <p className="section-eyebrow">Password reset</p>
-            <Title level={2}>Set a new password</Title>
+            <p className="section-eyebrow">Réinitialisation du mot de passe</p>
+            <Title level={2}>Définissez un nouveau mot de passe</Title>
             <Text className="auth-heading__copy">
-              Choose a new password for <strong>{email || 'your account'}</strong>.
+              Choisissez un nouveau mot de passe pour <strong>{email || 'votre compte'}</strong>.
             </Text>
           </div>
 
@@ -115,8 +115,8 @@ export default function ResetPasswordPage() {
             <Alert
               type="error"
               showIcon
-              message="Invalid reset link"
-              description="This link is missing required information. Please request a new password reset."
+              message="Lien de réinitialisation invalide"
+              description="Il manque des informations requises dans ce lien. Veuillez demander une nouvelle réinitialisation de mot de passe."
             />
           ) : (
             <Form
@@ -139,16 +139,16 @@ export default function ResetPasswordPage() {
 
               <Form.Item
                 name="password"
-                label="New password"
+                label="Nouveau mot de passe"
                 rules={[
-                  { required: true, message: 'Please enter a new password.' },
-                  { min: 8, message: 'Password must be at least 8 characters.' },
+                  { required: true, message: 'Veuillez saisir un nouveau mot de passe.' },
+                  { min: 8, message: 'Le mot de passe doit comporter au moins 8 caractères.' },
                 ]}
                 hasFeedback
               >
                 <Input.Password
                   prefix={<LockOutlined aria-hidden="true" />}
-                  placeholder="New password"
+                  placeholder="Nouveau mot de passe"
                   autoComplete="new-password"
                   autoFocus
                 />
@@ -156,44 +156,44 @@ export default function ResetPasswordPage() {
 
               <Form.Item
                 name="password_confirmation"
-                label="Confirm new password"
+                label="Confirmez le nouveau mot de passe"
                 dependencies={['password']}
                 hasFeedback
                 rules={[
-                  { required: true, message: 'Please confirm your new password.' },
+                  { required: true, message: 'Veuillez confirmer votre nouveau mot de passe.' },
                   ({ getFieldValue }) => ({
                     validator(_, value) {
                       if (!value || getFieldValue('password') === value) {
                         return Promise.resolve();
                       }
-                      return Promise.reject(new Error('Passwords do not match.'));
+                      return Promise.reject(new Error('Les mots de passe ne correspondent pas.'));
                     },
                   }),
                 ]}
               >
                 <Input.Password
                   prefix={<LockOutlined aria-hidden="true" />}
-                  placeholder="Confirm new password"
+                  placeholder="Confirmez le nouveau mot de passe"
                   autoComplete="new-password"
                 />
               </Form.Item>
 
               <Form.Item className="auth-form__action">
                 <Button type="primary" htmlType="submit" loading={loading} block>
-                  Update password
+                  Mettre à jour le mot de passe
                 </Button>
               </Form.Item>
 
               <div className="security-note">
                 <SafetyCertificateOutlined aria-hidden="true" />
-                <span>All existing sessions will be signed out after this change.</span>
+                <span>Toutes les sessions existantes seront déconnectées après cette modification.</span>
               </div>
             </Form>
           )}
 
           <div className="auth-panel__footer">
             <Link to="/login">
-              <ArrowLeftOutlined aria-hidden="true" /> Back to sign in
+              <ArrowLeftOutlined aria-hidden="true" /> Retour à la connexion
             </Link>
           </div>
         </div>

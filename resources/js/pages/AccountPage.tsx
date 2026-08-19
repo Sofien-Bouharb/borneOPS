@@ -26,11 +26,11 @@ export default function AccountPage() {
     const revokeMutation = useMutation({
         mutationFn: revokeSession,
         onSuccess: () => {
-            message.success('Session revoked.');
+            message.success('Session révoquée.');
             queryClient.invalidateQueries({ queryKey: ['sessions'] });
         },
         onError: () => {
-            message.error('Could not revoke that session. It may already be gone.');
+            message.error('Impossible de révoquer cette session. Elle a peut-être déjà expiré.');
             queryClient.invalidateQueries({ queryKey: ['sessions'] });
         },
     });
@@ -45,9 +45,9 @@ export default function AccountPage() {
             <div style={{ padding: 24 }}>
                 <div className="dashboard-heading">
                     <div>
-                        <p className="section-eyebrow">Access administration</p>
-                        <h1>Account &amp; sessions</h1>
-                        <p>Review operator access and revoke sessions you do not recognize.</p>
+                        <p className="section-eyebrow">Administration des accès</p>
+                        <h1>Compte et sessions</h1>
+                        <p>Vérifiez les accès des opérateurs et révoquez les sessions que vous ne reconnaissez pas.</p>
                     </div>
                 </div>
 
@@ -62,7 +62,7 @@ export default function AccountPage() {
                                 <Text type="secondary">{user?.email}</Text>
                             </div>
                         </div>
-                        <div className="role-list" aria-label="Assigned roles">
+                        <div className="role-list" aria-label="Rôles attribués">
                             {user?.roles?.map((role) => (
                                 <Tag className="role-tag" key={role}>
                                     {role}
@@ -78,7 +78,7 @@ export default function AccountPage() {
                         <div className="sessions-title">
                             <span className="sessions-title__label">
                                 <DesktopOutlined aria-hidden="true" />
-                                Active sessions
+                                Sessions actives
                             </span>
                             {!isLoading && !isError && (
                                 <span className="sessions-title__count">
@@ -92,13 +92,13 @@ export default function AccountPage() {
                 >
                     {isError && (
                         <Text type="danger" role="alert">
-                            Couldn’t load your active sessions. Try refreshing the page.
+                            Impossible de charger vos sessions actives. Veuillez actualiser la page.
                         </Text>
                     )}
 
                     <List
                         dataSource={sessions ?? []}
-                        locale={{ emptyText: 'No active sessions found.' }}
+                        locale={{ emptyText: 'Aucune session active trouvée.' }}
                         renderItem={(session) => (
                             <List.Item
                                 className="session-item"
@@ -109,9 +109,9 @@ export default function AccountPage() {
                                         : [
                                               <Popconfirm
                                                   key="revoke"
-                                                  title="Revoke this session?"
-                                                  description="That device will be signed out immediately."
-                                                  okText="Revoke"
+                                                  title="Révoquer cette session ?"
+                                                  description="Cet appareil sera déconnecté immédiatement."
+                                                  okText="Révoquer"
                                                   okButtonProps={{ danger: true }}
                                                   onConfirm={() => revokeMutation.mutate(session.id)}
                                               >
@@ -122,9 +122,9 @@ export default function AccountPage() {
                                                           revokeMutation.isPending &&
                                                           revokeMutation.variables === session.id
                                                       }
-                                                      aria-label="Revoke this device session"
+                                                      aria-label="Révoquer la session de cet appareil"
                                                   >
-                                                      Revoke access
+                                                      Révoquer l’accès
                                                   </Button>
                                               </Popconfirm>,
                                           ]
@@ -139,13 +139,13 @@ export default function AccountPage() {
                                     </div>
                                     <div>
                                         <div className="session-name">
-                                            {session.is_current ? 'This device' : 'Signed-in device'}
+                                            {session.is_current ? 'Cet appareil' : 'Appareil connecté'}
                                             {session.is_current && (
-                                                <Tag className="current-tag">Current session</Tag>
+                                                <Tag className="current-tag">Session actuelle</Tag>
                                             )}
                                         </div>
                                         <div className="session-time">
-                                            Signed in{' '}
+                                            Connecté le{' '}
                                             <time dateTime={session.created_at}>
                                                 {new Date(session.created_at).toLocaleString()}
                                             </time>
@@ -159,20 +159,20 @@ export default function AccountPage() {
 
                 <div className="danger-zone">
                     <div>
-                        <span className="danger-zone__title">End all operator sessions</span>
+                        <span className="danger-zone__title">Mettre fin à toutes les sessions opérateur</span>
                         <span className="danger-zone__copy">
-                            Sign this account out on every device, including this one.
+                            Déconnectez ce compte de tous les appareils, y compris celui-ci.
                         </span>
                     </div>
                     <Popconfirm
-                        title="Log out everywhere?"
-                        description="This will end every active session on every device, including this one."
-                        okText="Log out everywhere"
+                        title="Se déconnecter de tous les appareils ?"
+                        description="Cette action mettra fin à toutes les sessions actives sur tous les appareils, y compris celui-ci."
+                        okText="Se déconnecter de tous les appareils"
                         okButtonProps={{ danger: true }}
                         onConfirm={handleLogoutEverywhere}
                     >
                         <Button danger icon={<LogoutOutlined />}>
-                            Log out everywhere
+                            Se déconnecter de tous les appareils
                         </Button>
                     </Popconfirm>
                 </div>

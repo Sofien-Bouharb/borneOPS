@@ -43,9 +43,9 @@ export default function ForgotPasswordPage() {
     } catch (err: any) {
       const status = err?.response?.status;
       if (status === 429) {
-        setError('Too many attempts. Please wait a few minutes and try again.');
+        setError('Trop de tentatives. Veuillez patienter quelques minutes avant de réessayer.');
       } else if (status === 422) {
-        setError('Please enter a valid email address.');
+        setError('Veuillez saisir une adresse e-mail valide.');
       } else {
         // Any other failure: still don't reveal whether the account
         // exists. Show the same generic confirmation as a success case
@@ -66,34 +66,34 @@ export default function ForgotPasswordPage() {
           </span>
           <span>
             <span className="brand__name">BorneOPS</span>
-            <span className="brand__descriptor">Charge network control</span>
+            <span className="brand__descriptor">Pilotage du réseau de recharge</span>
           </span>
         </div>
 
         <div className="auth-context__content">
-          <p className="auth-context__eyebrow">Account recovery</p>
+          <p className="auth-context__eyebrow">Récupération de compte</p>
           <h1 className="auth-context__title">
-            Restore access without exposing operator accounts.
+            Restaurez l’accès sans exposer les comptes opérateur.
           </h1>
           <p className="auth-context__copy">
-            Recovery requests use a privacy-preserving response and a time-limited
-            link to keep operational identities protected.
+            Les demandes de récupération utilisent une réponse préservant la confidentialité et un
+            lien à durée limitée afin de protéger les identités opérationnelles.
           </p>
         </div>
 
         <div className="auth-context__footer">
           <span className="auth-context__status" aria-hidden="true" />
-          Protected account recovery
+          Récupération de compte protégée
         </div>
       </aside>
 
       <main className="auth-main">
         <div className="auth-panel">
           <div className="auth-heading">
-            <p className="section-eyebrow">Account recovery</p>
-            <Title level={2}>Reset your password</Title>
+            <p className="section-eyebrow">Récupération de compte</p>
+            <Title level={2}>Réinitialisez votre mot de passe</Title>
             <Text className="auth-heading__copy">
-              Enter your work email and we’ll send password reset instructions.
+              Saisissez votre adresse e-mail professionnelle et nous vous enverrons les instructions de réinitialisation.
             </Text>
           </div>
 
@@ -102,12 +102,12 @@ export default function ForgotPasswordPage() {
               <Alert
                 type="success"
                 showIcon
-                message="Check your email"
-                description="If an account exists for that email address, we’ve sent a link to reset your password."
+                message="Vérifiez votre messagerie"
+                description="Si un compte existe pour cette adresse e-mail, nous avons envoyé un lien de réinitialisation de votre mot de passe."
               />
               <div className="security-note">
                 <SafetyCertificateOutlined aria-hidden="true" />
-                <span>The reset link is time-limited for account security.</span>
+                <span>Le lien de réinitialisation a une durée de validité limitée pour la sécurité du compte.</span>
               </div>
             </>
           ) : (
@@ -131,10 +131,10 @@ export default function ForgotPasswordPage() {
 
               <Form.Item
                 name="email"
-                label="Work email"
+                label="Adresse e-mail professionnelle"
                 rules={[
-                  { required: true, message: 'Please enter your email address.' },
-                  { type: 'email', message: 'Please enter a valid email address.' },
+                  { required: true, message: 'Veuillez saisir votre adresse e-mail.' },
+                  { type: 'email', message: 'Veuillez saisir une adresse e-mail valide.' },
                 ]}
               >
                 <Input
@@ -147,7 +147,7 @@ export default function ForgotPasswordPage() {
 
               <Form.Item className="auth-form__action">
                 <Button type="primary" htmlType="submit" loading={loading} block>
-                  Send reset instructions
+                  Envoyer les instructions de réinitialisation
                 </Button>
               </Form.Item>
             </Form>
@@ -155,7 +155,7 @@ export default function ForgotPasswordPage() {
 
           <div className="auth-panel__footer">
             <Link to="/login">
-              <ArrowLeftOutlined aria-hidden="true" /> Back to sign in
+              <ArrowLeftOutlined aria-hidden="true" /> Retour à la connexion
             </Link>
           </div>
         </div>

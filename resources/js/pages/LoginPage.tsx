@@ -57,7 +57,7 @@ export default function LoginPage() {
             }
         } catch (err: any) {
             setError(
-                err.response?.data?.message ?? 'Unable to log in. Please try again.',
+                err.response?.data?.message ?? 'Impossible de vous connecter. Veuillez réessayer.',
             );
         } finally {
             setSubmitting(false);
@@ -99,34 +99,34 @@ export default function LoginPage() {
                     </span>
                     <span>
                         <span className="brand__name">BorneOPS</span>
-                        <span className="brand__descriptor">Charge network control</span>
+                        <span className="brand__descriptor">Pilotage du réseau de recharge</span>
                     </span>
                 </div>
 
                 <div className="auth-context__content">
-                    <p className="auth-context__eyebrow">Infrastructure operations</p>
+                    <p className="auth-context__eyebrow">Exploitation de l’infrastructure</p>
                     <h1 className="auth-context__title">
-                        The operational view of your charging network.
+                        La vue opérationnelle de votre réseau de recharge.
                     </h1>
                     <p className="auth-context__copy">
-                        Supervise connected stations, respond to incidents, and protect
-                        network availability from one controlled workspace.
+                        Supervisez les bornes connectées, répondez aux incidents et assurez
+                        la disponibilité du réseau depuis un espace de travail centralisé.
                     </p>
                 </div>
 
                 <div className="auth-context__footer">
                     <span className="auth-context__status" aria-hidden="true" />
-                    Secure operator access
+                    Accès opérateur sécurisé
                 </div>
             </aside>
 
             <main className="auth-main">
                 <div className="auth-panel">
                     <div className="auth-heading">
-                        <p className="section-eyebrow">Operator access</p>
-                        <Title level={2}>Sign in</Title>
+                        <p className="section-eyebrow">Accès opérateur</p>
+                        <Title level={2}>Connexion</Title>
                         <Text className="auth-heading__copy">
-                            Use your organization credentials to access BorneOPS.
+                            Utilisez les identifiants de votre organisation pour accéder à BorneOPS.
                         </Text>
                     </div>
 
@@ -154,11 +154,11 @@ export default function LoginPage() {
                         requiredMark={false}
                     >
                         <Form.Item
-                            label="Work email"
+                            label="Adresse e-mail professionnelle"
                             name="email"
                             rules={[
-                                { required: true, message: 'Please enter your email' },
-                                { type: 'email', message: 'Please enter a valid email' },
+                                { required: true, message: 'Veuillez saisir votre adresse e-mail' },
+                                { type: 'email', message: 'Veuillez saisir une adresse e-mail valide' },
                             ]}
                         >
                             <Input
@@ -170,31 +170,31 @@ export default function LoginPage() {
                         </Form.Item>
 
                         <Form.Item
-                            label="Password"
+                            label="Mot de passe"
                             name="password"
-                            rules={[{ required: true, message: 'Please enter your password' }]}
+                            rules={[{ required: true, message: 'Veuillez saisir votre mot de passe' }]}
                         >
                             <Input.Password
                                 prefix={<LockOutlined aria-hidden="true" />}
                                 autoComplete="current-password"
-                                placeholder="Enter your password"
+                                placeholder="Saisissez votre mot de passe"
                             />
                         </Form.Item>
 
                         <Form.Item className="auth-form__action">
                             <Button type="primary" htmlType="submit" block loading={submitting}>
-                                Sign in to operations
+                                Se connecter à l’espace opérateur
                             </Button>
                         </Form.Item>
                         <div className="auth-panel__footer">
-                            <Link to="/forgot-password">Forgot your password?</Link>
+                            <Link to="/forgot-password">Mot de passe oublié ?</Link>
                         </div>
                     </Form>
 
                     <div className="security-note">
                         <SafetyCertificateOutlined aria-hidden="true" />
                         <span>
-                            Access is restricted to authorized personnel and may be audited.
+                            L’accès est réservé au personnel autorisé et peut faire l’objet d’un audit.
                         </span>
                     </div>
                 </div>
